@@ -1,2 +1,2 @@
-# CAS-Cordova
-Clever Ads Solutions Cordova plugin
+# Clever Ads Solutions Cordova plugin
+Coming soon...
