@@ -1,0 +1,23 @@
+function onBannerLoaded() {
+   // Executed when the banner ad was loaded.
+}
+
+function onBannerLoadFailed() {
+   // Executed when the banner ad is failed to load.
+}
+
+function onBannerShown() {
+   // Executed when the banner ad is begin displayed.
+}
+
+function onBannerShowFailed() {
+   // Executed when the banner ad is failed to display.
+}
+
+function onBannerClicked() {
+   // Executed when the user clicks on a banner ad.
+}
+
+function onBannerClosed() {
+   // Executed when the banner ad is closed.
+}
