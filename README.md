@@ -11,12 +11,12 @@ To get started, here is the link to [Cordova plugin integration documentation](h
 
 ## Demo application
 
-1. Running demo application on android. 
-    1.1. Run  `cordova platform add android` in the same directory as the package.json. 
-    1.2. Run  `cordova run android` to build and run an app on your Android device. 
-2. Running demo application on iOS.
-    1.1. Run  `cordova platform add iOS` in the same directory as the package.json. 
-    1.2. Run  `cordova run iOS` to build and run an app on your iOS device. 
+1. Running demo application on android.    
+    1.1. Run  `cordova platform add android` in the same directory as the package.json.     
+    1.2. Run  `cordova run android` to build and run an app on your Android device.      
+2. Running demo application on iOS.    
+    1.1. Run  `cordova platform add iOS` in the same directory as the package.json.      
+    1.2. Run  `cordova run iOS` to build and run an app on your iOS device.     
 
 ## GitHub issue tracker
 To file bugs, make feature requests, or suggest improvements for the Cordova Plugin SDK, please use [GitHub's issue tracker](https://github.com/cleveradssolutions/CAS-Cordova/issues).
