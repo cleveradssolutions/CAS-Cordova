@@ -1,8 +1,8 @@
 {
-  "name": "com.cleveradssolutions.sample",
-  "displayName": "CordovaSample",
+  "name": "com.cleveradssolutions.cordova.example",
+  "displayName": "CordovaExample",
   "version": "1.0.0",
-  "description": "A sample Apache Cordova application that implement CleverAdsSolutions SDK.",
+  "description": "A sample Apache Cordova application that integrate CAS.AI plugin.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -13,7 +13,7 @@
   "author": "CleverAdsSolutions",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@cleveradssolutions/cas.cordova.base": "file:../CAS-Cordova/cas-cordova-base",
+    "@cleveradssolutions/cas.cordova.base": "file:../cordova-plugin-casai",
     "android": "^0.0.8",
     "cordova-plugin-add-swift-support": "^2.0.2",
     "cordova-plugin-whitelist": "^1.3.4"

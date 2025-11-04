@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+-->
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:rim="http://www.blackberry.com/ns/widgets"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="cordova-plugin-casai"
+    version="4.4.1">
+    <name>CAS Mobile Ads</name>
+    <description>CAS.AI Cordova Plugin for Android and iOS</description>
+    <license>Apache 2.0</license>
+    <author email="support@cas.ai" href="https://cas.ai">Clever Ads Solutions LTD</author>
+    <keywords>ads,mediation,monetization,mobile,admob</keywords>
+    <repo>https://github.com/cleveradssolutions/CAS-Cordova</repo>
+    <issue>https://github.com/cleveradssolutions/CAS-Cordova/issues</issue>
+    <js-module src="www/casai.js" name="CASMobileAds">
+        <clobbers target="casai" />
+    </js-module>
+    <!-- android -->
+    <platform name="android">
+        <preference name="GOOGLE_APP_ID_ANDROID" default="ca-app-pub-3940256099942544~3347511713" />
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="CASMobileAds" >
+                <param name="android-package" value="com.cleveradssolutions.plugin.cordova.CASMobileAds"/>
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <meta-data
+                android:name="com.google.android.gms.ads.APPLICATION_ID"
+                android:value="$GOOGLE_APP_ID_ANDROID"/>
+            <meta-data
+                android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
+                android:value="true"/>
+        </config-file>
+        <edit-config file="AndroidManifest.xml" target="/manifest/uses-sdk" mode="merge">
+            <uses-sdk android:minSdkVersion="23" />
+        </edit-config>
+        <source-file src="src/android/CASMobileAds.kt" target-dir="src/com/cleveradssolutions/plugin/cordova" />
+        <framework src="com.cleveradssolutions:cas-sdk:4.4.2" />
+        <framework src="src/android/casplugin.gradle" custom="true" type="gradleReference" />
+    </platform>
+    <!-- ios -->
+    <platform name="ios">
+        <preference name="GOOGLE_APP_ID_IOS" default="ca-app-pub-3940256099942544~1458002511" />
+        <preference name="USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
+        <config-file target="config.xml" parent="/*">
+            <feature name="CASMobileAds">
+                <param name="ios-package" value="CASCMobileAds"/>
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+        <source-file src="src/ios/CASCMobileAds.swift" />
+        <framework src="AppTrackingTransparency.framework" weak="true" />
+        <podspec>
+            <config>
+                <source url="https://cdn.cocoapods.org/"/>
+                <source url="https://github.com/cleveradssolutions/CAS-Specs.git"/>
+            </config>
+            <pods use-frameworks="true">
+                <pod name="CleverAdsSolutions-Base" spec="4.4.2" swift-version="5.0" />
+            </pods>
+        </podspec>
+        <config-file target="*-Info.plist" parent="NSUserTrackingUsageDescription">
+            <string>$USER_TRACKING_USAGE</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="GADApplicationIdentifier">
+            <string>$GOOGLE_APP_ID_IOS</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="GADDelayAppMeasurementInit">
+            <true/>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSAppTransportSecurity">
+            <dict>
+                <key>NSAllowsArbitraryLoads</key>
+                <true/>
+                <key>NSAllowsLocalNetworking</key>
+                <true/>
+                <key>NSAllowsArbitraryLoadsForMedia</key>
+                <true/>
+                <key>NSAllowsArbitraryLoadsInWebContent</key>
+                <true/>
+            </dict>
+        </config-file>
+        <config-file target="*-Info.plist" parent="SKAdNetworkItems">
+            <array>
+                <dict>
+                    <key>SKAdNetworkIdentifier</key>
+                    <string>cstr6suwn9.skadnetwork</string>
+                </dict>
+            </array>
+        </config-file>
+    </platform>
+    <platform name="browser">
+        <config-file target="config.xml" parent="/*">
+            <feature name="CASMobileAds">
+                <param name="browser-package" value="CASMobileAds" />
+            </feature>
+        </config-file>
+
+        <js-module src="src/browser/casaiproxy.js" name="casaiproxy">
+            <runs />
+        </js-module>
+    </platform>
+</plugin>

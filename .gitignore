@@ -11,3 +11,15 @@ node_modules
 www/index.js
 js/**/*.js
 js/**/*.js.map
+
+Thumbs.db
+*.csproj.user
+*.suo
+*.cache
+*.DS_Store
+
+*.bak
+*.cache
+*.log
+*.swp
+*.user

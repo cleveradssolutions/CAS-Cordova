@@ -1,0 +1,34 @@
+{
+  "name": "cordova-plugin-casai",
+  "version": "4.4.1",
+  "description": "CAS.AI Cordova Plugin for Android and iOS",
+  "author": "Clever Ads Solutions LTD <support@cas.ai> (https://cas.ai)",
+  "license": "Apache-2.0",
+  "repository": "github:cleveradssolutions/CAS-Cordova",
+  "bugs": {
+    "url": "https://github.com/cleveradssolutions/CAS-Cordova/issues"
+  },
+  "homepage": "https://docs.page/cleveradssolutions/docs/Cordova",
+  "types": "./types/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cordova",
+    "echosystem:cordova",
+    "cordova-android",
+    "cordova-ios",
+    "mobile",
+    "ads",
+    "mediation",
+    "monetization"
+  ],
+  "type": "commonjs",
+  "cordova": {
+    "id": "cordova-plugin-casai",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  }
+}
