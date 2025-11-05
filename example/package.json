@@ -5,21 +5,27 @@
   "description": "A sample Apache Cordova application that responds to the deviceready event.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "plugin": "cordova plugin add ../cordova-plugin-casai --link",
+    "android": "cordova platform rm android && cordova platform add android --nosave",
+    "ios": "cordova platform rm ios && cordova platform add ios --nosave",
+    "test-android": "cordova prepare android --verbose",
+    "test-ios": "cordova prepare ios --verbose"
   },
   "keywords": [
     "ecosystem:cordova"
   ],
   "author": "Apache Cordova Team",
   "license": "Apache-2.0",
-  "devDependencies": {
-    "cordova-android": "^14.0.1",
-    "cordova-ios": "^7.1.1",
-    "cordova-plugin-casai": "file:../cordova-plugin-casai"
-  },
   "cordova": {
     "plugins": {
-      "cordova-plugin-casai": {}
-    }
+      "cordova-plugin-casai": {
+        "IOS_CAS_ID": "demo"
+      }
+    },
+    "platforms": []
+  },
+  "devDependencies": {
+    "cordova": "^12.0.0",
+    "cordova-plugin-casai": "file:../cordova-plugin-casai"
   }
 }

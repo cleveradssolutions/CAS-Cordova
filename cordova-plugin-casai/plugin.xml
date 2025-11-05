@@ -24,11 +24,13 @@
     version="4.4.2">
     <name>CAS Mobile Ads</name>
     <description>CAS.AI Cordova Plugin for Android and iOS</description>
-    <license>Apache 2.0</license>
+    <license>Apache 2.0 License</license>
     <author email="support@cas.ai" href="https://cas.ai">Clever Ads Solutions LTD</author>
     <keywords>ads,mediation,monetization,mobile,admob</keywords>
     <repo>https://github.com/cleveradssolutions/CAS-Cordova</repo>
     <issue>https://github.com/cleveradssolutions/CAS-Cordova/issues</issue>
+    <preference name="IOS_CAS_ID" default="demo" />
+    <preference name="IOS_USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
     <js-module src="www/casai.js" name="CASMobileAds">
         <clobbers target="casai" />
     </js-module>
@@ -45,16 +47,16 @@
                 android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
                 android:value="true"/>
         </config-file>
-        <edit-config file="AndroidManifest.xml" target="/manifest/uses-sdk" mode="merge">
-            <uses-sdk android:minSdkVersion="23" />
-        </edit-config>
         <source-file src="src/android/CASMobileAds.kt" target-dir="src/com/cleveradssolutions/plugin/cordova" />
         <framework src="com.cleveradssolutions:cas-sdk:4.4.2" />
         <framework src="src/android/casplugin.gradle" custom="true" type="gradleReference" />
     </platform>
     <!-- ios -->
     <platform name="ios">
-        <preference name="USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
+        <info>
+The CAS.AI iOS will be configured for the ID '$IOS_CAS_ID'. Please define the registered CAS ID by &lt;variable name="IOS_CAS_ID" value="123456789"/&gt; in config.xml to configure iOS project.
+        </info>
+        <hook type="before_build" src="scripts/beforeIOSBuild.js" />
         <config-file target="config.xml" parent="/*">
             <feature name="CASMobileAds">
                 <param name="ios-package" value="CASCMobileAds"/>
@@ -73,7 +75,7 @@
             </pods>
         </podspec>
         <config-file target="*-Info.plist" parent="NSUserTrackingUsageDescription">
-            <string>$USER_TRACKING_USAGE</string>
+            <string>$IOS_USER_TRACKING_USAGE</string>
         </config-file>
         <config-file target="*-Info.plist" parent="GADDelayAppMeasurementInit">
             <true/>
@@ -90,14 +92,6 @@
                 <true/>
             </dict>
         </config-file>
-        <config-file target="*-Info.plist" parent="SKAdNetworkItems">
-            <array>
-                <dict>
-                    <key>SKAdNetworkIdentifier</key>
-                    <string>cstr6suwn9.skadnetwork</string>
-                </dict>
-            </array>
-        </config-file>
     </platform>
     <platform name="browser">
         <config-file target="config.xml" parent="/*">
@@ -105,7 +99,6 @@
                 <param name="browser-package" value="CASMobileAds" />
             </feature>
         </config-file>
-
         <js-module src="src/browser/casaiproxy.js" name="casaiproxy">
             <runs />
         </js-module>
