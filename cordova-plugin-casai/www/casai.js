@@ -106,7 +106,7 @@ var casai = {
   },
 
   setUserAge: function (age) {
-    nativeCall('setAdSoundsMuted', [age]);
+    nativeCall('setUserAge', [age]);
   },
 
   setUserGender: function (gender) {

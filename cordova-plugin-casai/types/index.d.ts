@@ -244,7 +244,7 @@ interface CASMobileAds {
      * Works regardless of `autoReload`.
      */
     refreshInterval: number;
-  }): Promise;
+  }): Promise<void>;
 
   /**
    * Displays banner ad on the screen.
@@ -293,7 +293,7 @@ interface CASMobileAds {
      * @default 30 seconds
      */
     refreshInterval: number;
-  }): Promise;
+  }): Promise<void>;
 
   /**
    * Displays banner ad on the screen.
@@ -340,7 +340,7 @@ interface CASMobileAds {
      * @default false
      */
     autoShow: boolean;
-  }): Promise;
+  }): Promise<void>;
 
   /**
    * Checks if an App Open ad is currently loaded and ready to be shown.
@@ -354,7 +354,7 @@ interface CASMobileAds {
    *
    * @returns A Promise that resolves after the ad is dismissed, or rejects with an error if the ad fails to show.
    */
-  showAppOpenAd(): Promise;
+  showAppOpenAd(): Promise<void>;
 
   /**
    * Destroys the currently loaded App Open ad and frees up resources.
@@ -391,7 +391,7 @@ interface CASMobileAds {
      * @default 0
      */
     minInterval: number;
-  }): Promise;
+  }): Promise<void>;
 
   /**
    * Checks if an Interstitial ad is currently loaded and ready to be shown.
@@ -405,7 +405,7 @@ interface CASMobileAds {
    *
    * @returns A Promise that resolves after the ad is dismissed, or rejects with an error if the ad fails to show.
    */
-  showInterstitialAd(): Promise;
+  showInterstitialAd(): Promise<void>;
 
   /**
    * Destroys the currently loaded Interstitial ad and frees up resources.
@@ -429,7 +429,7 @@ interface CASMobileAds {
      * @default false
      */
     autoReload: boolean;
-  }): Promise;
+  }): Promise<void>;
 
   /**
    * Checks if an Rewarded ad is currently loaded and ready to be shown.
@@ -443,7 +443,7 @@ interface CASMobileAds {
    *
    * @returns A Promise that resolves after the ad is dismissed, or rejects with an error if the ad fails to show.
    */
-  showRewardedAd(): Promise;
+  showRewardedAd(): Promise<void>;
 
   /**
    * Destroys the currently loaded Rewarded ad and frees up resources.
@@ -455,7 +455,7 @@ interface CASMobileAds {
 /**
  *  Represents the size of a banner ad.
  */
-enum BannerAdSize {
+declare enum BannerAdSize {
   /**
    * Standard Banner has a fixed size of 320x50 and is the minimum ad size
    */
@@ -487,7 +487,7 @@ enum BannerAdSize {
 /**
  * Ad Position on screen.
  */
-enum AdPosition {
+declare enum AdPosition {
   TOP_CENTER = 0,
   TOP_LEFT = 1,
   TOP_RIGHT = 2,
@@ -504,7 +504,7 @@ enum AdPosition {
 /**
  * Ad format
  */
-enum AdFormat {
+declare enum AdFormat {
   BANNER = 'Banner',
   MREC = 'MediumRectangle',
   APPOPEN = 'AppOpen',

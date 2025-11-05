@@ -21,7 +21,7 @@
     xmlns:rim="http://www.blackberry.com/ns/widgets"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="cordova-plugin-casai"
-    version="4.4.1">
+    version="4.4.2">
     <name>CAS Mobile Ads</name>
     <description>CAS.AI Cordova Plugin for Android and iOS</description>
     <license>Apache 2.0</license>
