@@ -65,11 +65,9 @@ def update_kotlin_file(js_funcs):
 
     before, block, after = match.groups()
 
-    # === Витягуємо існуючі дії у when ===
     existing_actions = re.findall(r'"([^"]+)"\s*->', block)
     existing_set = set(existing_actions)
 
-    # === Формуємо нові рядки, додаючи тільки відсутні ===
     lines = []
     for key, value in js_funcs:
         if key not in existing_set:
@@ -88,7 +86,32 @@ def update_kotlin_file(js_funcs):
         kotlin_file.write_text(new_text, encoding="utf-8")
 
     print("✅ CASMobileAds.kt")
-    
+
+def update_swift_file(js_funcs):
+    kotlin_file = Path('cordova-plugin-casai/src/ios/CASCMobileAds.swift')
+    text = kotlin_file.read_text(encoding="utf-8")
+
+    pattern = r'@objc\s+func\s+([a-zA-Z_][a-zA-Z0-9_]*)\(_ command: CDVInvokedUrlCommand\)'
+    existing_actions = re.findall(pattern, text)
+    existing_set = set(existing_actions)
+
+    lines = []
+    for key, value in js_funcs:
+        if key not in existing_set:
+            lines.append(f'    @objc func {key}(_ command: CDVInvokedUrlCommand) {{')
+            for data in value[value.find(' native'):].split("\n"):
+                if data.strip():
+                    lines.append(f'        // {data.strip()}')
+            lines.append(f'        ')
+            lines.append(f'    }}')
+            lines.append(f'')
+
+    if lines:
+        close_index = text.rfind('}')
+        new_text = text[:close_index] + "\n" + "\n".join(lines) + "\n" + text[close_index:]
+        kotlin_file.write_text(new_text, encoding="utf-8")
+
+    print("✅ CASCMobileAds.swift")
     
 def check_types_file(ts_content, js_content):
     ts_func_names = set(re.findall(r'^\s+([A-Za-z_]\w*)\s*\(', ts_content, flags=re.MULTILINE))
@@ -115,6 +138,7 @@ def check_types_file(ts_content, js_content):
         print(f"✅ index.d.ts {len(js_func_names)} functions")
         
     update_kotlin_file(js_funcs)
+    update_swift_file(js_funcs)
 
 
 ts_file = Path('cordova-plugin-casai/types/index.d.ts').read_text()
