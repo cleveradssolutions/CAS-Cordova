@@ -21,12 +21,12 @@ const isFunction = function isFunction(functionObj) {
 };
 
 const nativeCall = function nativeCall(name, params) {
-  cordova.exec(null, null, 'CASMobileAds', name, params);
+  cordova.exec(null, null, 'CASСMobileAds', name, params);
 };
 
 const nativePromise = function nativePromise(name, params) {
   return new Promise(function (resolve, reject) {
-    cordova.exec(resolve, reject, 'CASMobileAds', name, params);
+    cordova.exec(resolve, reject, 'CASСMobileAds', name, params);
   });
 };
 

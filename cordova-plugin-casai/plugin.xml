@@ -30,7 +30,7 @@
     <repo>https://github.com/cleveradssolutions/CAS-Cordova</repo>
     <issue>https://github.com/cleveradssolutions/CAS-Cordova/issues</issue>
     <js-module src="www/casai.js" name="CASMobileAds">
-        <clobbers target="casai" />
+        <clobbers target="window.casai" />
     </js-module>
     <!-- android -->
     <platform name="android">
@@ -56,7 +56,7 @@
     <platform name="ios">
         <preference name="USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
         <config-file target="config.xml" parent="/*">
-            <feature name="CASMobileAds">
+            <feature name="CASСMobileAds">
                 <param name="ios-package" value="CASCMobileAds"/>
                 <param name="onload" value="true" />
             </feature>
