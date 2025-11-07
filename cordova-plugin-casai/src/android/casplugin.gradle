@@ -62,4 +62,10 @@ repositories {
 
 cdvPluginPostBuildExtras.add({
     apply plugin: "com.cleveradssolutions.gradle-plugin"
+
+    cas {
+        // CAS Plugin hook
+        useAdvertisingId = true
+        // End CAS Plugin hook
+    }
 });

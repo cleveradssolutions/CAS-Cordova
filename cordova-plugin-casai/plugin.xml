@@ -29,13 +29,18 @@
     <keywords>ads,mediation,monetization,mobile,admob</keywords>
     <repo>https://github.com/cleveradssolutions/CAS-Cordova</repo>
     <issue>https://github.com/cleveradssolutions/CAS-Cordova/issues</issue>
-    <preference name="IOS_CAS_ID" default="demo" />
-    <preference name="IOS_USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
     <js-module src="www/casai.js" name="CASMobileAds">
         <clobbers target="casai" />
     </js-module>
-    <!-- android -->
     <platform name="android">
+        <!-- Valid values "Optimal" and "Famileis" and "-" for none. -->
+        <preference name="ANDROID_CAS_SOLUTIONS" default="-" />
+        <!-- Valid values from adapter names: https://docs.page/cleveradssolutions/docs/Android/Mediated-Networks 
+            For example: "googleAds,ironSource" -->
+        <preference name="ANDROID_CAS_ADAPTERS" default="-" />
+        <!-- Is allowed Google AD_ID to use. Valid values "true" and "false". -->
+        <preference name="ANDROID_USE_AD_ID" default="true" />
+        <hook type="before_prepare" src="scripts/android_before_prepare.js" />
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="CASMobileAds" >
                 <param name="android-package" value="com.cleveradssolutions.plugin.cordova.CASMobileAds"/>
@@ -51,12 +56,21 @@
         <framework src="com.cleveradssolutions:cas-sdk:4.4.2" />
         <framework src="src/android/casplugin.gradle" custom="true" type="gradleReference" />
     </platform>
-    <!-- ios -->
     <platform name="ios">
-        <info>
-The CAS.AI iOS will be configured for the ID '$IOS_CAS_ID'. Please define the registered CAS ID by &lt;variable name="IOS_CAS_ID" value="123456789"/&gt; in config.xml to configure iOS project.
-        </info>
-        <hook type="before_build" src="scripts/beforeIOSBuild.js" />
+        <!-- In most cases, a CAS ID is the same as your app store ID. 
+            You can leave the "demo" value only for testing purposes. -->
+        <preference name="IOS_CAS_ID" default="" />
+        <!-- Valid values "Optimal" and "Famileis" and "-" for none. -->
+        <preference name="IOS_CAS_SOLUTIONS" default="-" />
+        <!-- Valid values from adapter names: https://docs.page/cleveradssolutions/docs/iOS/Mediated-Networks 
+            For example: "GoogleAds,IronSource" -->
+        <preference name="IOS_CAS_ADAPTERS" default="-" />
+        <!-- Required to display the App Tracking Transparency authorization request for accessing the IDFA -->
+        <preference name="IOS_USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
+        <framework src="AppTrackingTransparency.framework" weak="true" />
+        <hook type="before_compile" src="scripts/ios_before_compile.js" />
+        <hook type="before_plugin_install" src="scripts/ios_before_plugin_install.js" />
+        <hook type="before_plugin_uninstall" src="scripts/ios_before_plugin_uninstall.js" />
         <config-file target="config.xml" parent="/*">
             <feature name="CASMobileAds">
                 <param name="ios-package" value="CASCMobileAds"/>
@@ -64,10 +78,9 @@ The CAS.AI iOS will be configured for the ID '$IOS_CAS_ID'. Please define the re
             </feature>
         </config-file>
         <source-file src="src/ios/CASCMobileAds.swift" />
-        <framework src="AppTrackingTransparency.framework" weak="true" />
         <podspec>
             <config>
-                <source url="https://cdn.cocoapods.org/"/>
+                <source url="https://github.com/CocoaPods/Specs.git"/>
                 <source url="https://github.com/cleveradssolutions/CAS-Specs.git"/>
             </config>
             <pods use-frameworks="true">
@@ -76,21 +89,6 @@ The CAS.AI iOS will be configured for the ID '$IOS_CAS_ID'. Please define the re
         </podspec>
         <config-file target="*-Info.plist" parent="NSUserTrackingUsageDescription">
             <string>$IOS_USER_TRACKING_USAGE</string>
-        </config-file>
-        <config-file target="*-Info.plist" parent="GADDelayAppMeasurementInit">
-            <true/>
-        </config-file>
-        <config-file target="*-Info.plist" parent="NSAppTransportSecurity">
-            <dict>
-                <key>NSAllowsArbitraryLoads</key>
-                <true/>
-                <key>NSAllowsLocalNetworking</key>
-                <true/>
-                <key>NSAllowsArbitraryLoadsForMedia</key>
-                <true/>
-                <key>NSAllowsArbitraryLoadsInWebContent</key>
-                <true/>
-            </dict>
         </config-file>
     </platform>
     <platform name="browser">
