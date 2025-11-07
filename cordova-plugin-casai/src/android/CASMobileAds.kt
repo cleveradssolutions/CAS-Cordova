@@ -53,7 +53,6 @@ class CASMobileAds : CordovaPlugin() {
     private var interstitial: CASInterstitial? = null
     private var rewarded: CASRewarded? = null
 
-    // ---- Cordova dispatcher
     override fun execute(action: String, data: JSONArray, cb: CallbackContext): Boolean = when (action) {
         "initialize" -> { initialize(data, cb); true }
         "showConsentFlow" -> { showConsentFlow(data, cb); true }
@@ -95,8 +94,6 @@ class CASMobileAds : CordovaPlugin() {
 
         else -> false
     }
-
-    // ---- Helpers
 
     private fun gravity(pos:Int)=when(pos){
         0->Gravity.TOP or Gravity.CENTER_HORIZONTAL
@@ -334,7 +331,6 @@ class CASMobileAds : CordovaPlugin() {
         cb.success()
     }
 
-
     private fun loadInterstitialAd(args: JSONArray, cb: CallbackContext) {
         val autoReload = args.optBoolean(0,false)
         val autoShow = args.optBoolean(1,false)
@@ -390,6 +386,4 @@ class CASMobileAds : CordovaPlugin() {
         rewardedAd.show(activity, callback)
         callbackContext.success()
     }
-
-
 }
