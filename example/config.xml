@@ -21,4 +21,8 @@
     <plugin name="cordova-plugin-casai" spec="*">
         <variable name="IOS_CAS_ID" value="demo" />
     </plugin>
+
+    <preference name="android-minSdkVersion" value="23"/>
+    <preference name="android-compileSdkVersion" value="35"/>
+
 </widget>

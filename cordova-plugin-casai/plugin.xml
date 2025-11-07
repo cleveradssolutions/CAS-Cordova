@@ -47,7 +47,10 @@
                 android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
                 android:value="true"/>
         </config-file>
-        <source-file src="src/android/CASMobileAds.kt" target-dir="src/com/cleveradssolutions/plugin/cordova" />
+
+        <source-file src="src/android/CASMobileAds.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
+        <source-file src="src/android/ScreenContentCallback.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
+        <source-file src="src/android/CordovaEvents.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <framework src="com.cleveradssolutions:cas-sdk:4.4.2" />
         <framework src="src/android/casplugin.gradle" custom="true" type="gradleReference" />
     </platform>
