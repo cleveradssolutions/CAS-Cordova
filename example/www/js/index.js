@@ -9,73 +9,156 @@
     console.log(...args);
   }
 
-  function execResolveReject(action, args = []) {
-    cordova.exec(
-      (res) => log("OK:", action, res),
-      (err) => log("ERR:", action, err),
-      SERVICE,
-      action,
-      args
-    );
-  }
+function onDeviceReady() {
+    // Cordova is now initialized. Have fun!
+    console.log('Running cordova-' + cordova.platformId + '@' + cordova.version);
+    document.getElementById('deviceready').classList.add('ready');
+}
 
-  const casEvents = [
-    "casai_ad_loaded",
-    "casai_ad_load_failed",
-    "casai_ad_showed",
-    "casai_ad_show_failed",
-    "casai_ad_clicked",
-    "casai_ad_impressions",
-    "casai_ad_dismissed",
-    "casai_ad_reward"
-  ];
-  casEvents.forEach((name) => {
-    window.addEventListener(name, (ev) => log("EVENT:", name, ev.detail || {}));
-  });
+var app = {
+    initialize: function () {
+        document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
+    },
+    
+    onDeviceReady: function () {
+        document.querySelector('.listening').style.display = 'none';
+        document.querySelector('.received').style.display = 'block';
+        this.createTestUI();
+        
+        console.log('Device is ready, initializing CAS...');
+        this.initCAS();
+    },
+    
+    initCAS: async function () {
+        try {
+            const result = await window.casai.initialize({
+                casIdForIOS: "test-ios-id",
+                forceTestAds: true,
+                showConsentFormIfRequired: false,
+                targetAudience: 0,
+                debugGeography: "eea",
+            });
+            this.log("CAS initialized");
+            console.log('CAS initialized:', result);
+        } catch (err) {
+            console.error('CAS init error:', err);
+        }
+    },
+    
+    createTestUI: function () {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '10px';
+        container.style.margin = '20px';
+        
+        const buttons = [
+            { label: 'Load Banner',          action: () => app.loadBanner() },
+            { label: 'Show Banner (Bottom)', action: () => app.showBanner(3) },
+            { label: 'Hide Banner',          action: () => app.hideBanner() },
+            { label: 'Destroy Banner',       action: () => app.destroyBanner() },
+            
+            { label: 'Load Interstitial',    action: () => app.loadInterstitial() },
+            { label: 'Show Interstitial',    action: () => app.showInterstitial() },
+            
+            { label: 'Load AppOpen',         action: () => app.loadAppOpen() },
+            { label: 'Show AppOpen',         action: () => app.showAppOpen() },
+            
+            { label: 'Load Rewarded',        action: () => app.loadRewarded() },
+            { label: 'Show Rewarded',        action: () => app.showRewarded() },
+            
+            { label: 'Load MREC Banner',     action: () => app.loadMREC() },
+            { label: 'Show MREC Center',     action: () => app.showMREC(6) },
+            { label: 'Destroy MREC',         action: () => app.destroyMREC() }
+        ];
+        
+        buttons.forEach(btn => {
+            const el = document.createElement('button');
+            el.textContent = btn.label;
+            el.style.padding = '10px';
+            el.style.fontSize = '16px';
+            el.style.borderRadius = '8px';
+            el.onclick = btn.action;
+            container.appendChild(el);
+        });
+        
+        document.body.appendChild(container);
+    },
+    
+    // Banner
+    loadBanner: async function () {
+        console.log('Loading banner...');
+        await window.casai.loadBannerAd(['A', 320, 50, true, 30]); // Adaptive banner
+    },
+    
+    showBanner: async function (position) {
+        console.log('Showing banner...');
+        await window.casai.showBannerAd([position]);
+    },
+    
+    hideBanner: async function () {
+        console.log('Hidding banner...');
+        await window.casai.hideBannerAd();
+    },
+    
+    destroyBanner: async function () {
+        console.log('Destroy banner...');
+        await window.casai.destroyBannerAd()
+    },
+    
+    // AppOpen
+    loadAppOpen: async function () {
+        console.log('Loading appopen...');
+        await window.casai.loadAppOpenAd([true]);
+    },
+    
+    showAppOpen: async function () {
+        console.log('Show appopen...');
+        await window.casai.showAppOpenAd();
+    },
+    
+    // Interstitial
+    loadInterstitial: async function () {
+        console.log('Loading interstitial...');
+        await window.casai.loadInterstitialAd([true]);
+    },
+    
+    showInterstitial: async function () {
+        console.log('Show interstitial...');
+        await window.casai.showInterstitialAd();
+    },
+    
+    // Rewarded
+    loadRewarded: async function () {
+        console.log('Loading rewarded...');
+        await window.casai.loadRewardedAd([true]);
+    },
+    
+    showRewarded: async function () {
+        console.log('Show rewarded...');
+        await window.casai.showRewardedAd();
+    },
+    
+    // MREC
+    loadMREC: async function () {
+        console.log('Load MREC...');
+        await window.casai.loadMRecAd([true, 30]);
+    },
+    
+    showMREC: async function ({ position } = {}) { // 6 = MIDDLE_CENTER (default)
+        console.log('Show MREC...');
+        await window.casai.showMRecAd([6]);
+    },
+    
+    hideMREC: async function () {
+        console.log('Hide MREC...');
+        await window.casai.hideMRecAd();
+    },
+    
+    destroyMREC: async function () {
+        console.log('Destroy MREC...');
+        await window.casai.destroyMRecAd();
+    },
+};
 
-  document.addEventListener("deviceready", () => {
-    log("Device ready. Cordova", cordova.platformId, cordova.version);
-
-    document.getElementById("btnInit").onclick = () => {
-      execResolveReject("initialize", [
-        cordova.version,
-        "demo",                
-        "",                    
-        "notchildren",         
-        true,                  
-        true,                  
-        [],                    
-        "eea",                
-        {}                     
-      ]);
-    };
-
-    document.getElementById("btnConsent").onclick = () => {
-      execResolveReject("showConsentFlow", [true]);
-    };
-
-    document.getElementById("btnLoadBanner").onclick = () => {
-      execResolveReject("loadBannerAd", ["A", 0, 0, true, 30]);
-    };
-    document.getElementById("btnShowBanner").onclick = () => {
-      execResolveReject("showBannerAd", [3]);
-    };
-    document.getElementById("btnHideBanner").onclick = () => execResolveReject("hideBannerAd");
-    document.getElementById("btnDestroyBanner").onclick = () => execResolveReject("destroyBannerAd");
-
-    document.getElementById("btnLoadMrec").onclick = () => execResolveReject("loadMRecAd", [true, 30]);
-    document.getElementById("btnShowMrec").onclick = () => execResolveReject("showMRecAd", [6]); // center
-    document.getElementById("btnDestroyMrec").onclick = () => execResolveReject("destroyMRecAd");
-
-    document.getElementById("btnLoadInter").onclick = () => execResolveReject("loadInterstitialAd", [false, false, 0]);
-    document.getElementById("btnShowInter").onclick = () => execResolveReject("showInterstitialAd");
-
-    document.getElementById("btnLoadRewarded").onclick = () => execResolveReject("loadRewardedAd", [false]);
-    document.getElementById("btnShowRewarded").onclick = () => execResolveReject("showRewardedAd");
-
-    document.getElementById("btnLoadAppOpen").onclick = () => execResolveReject("loadAppOpenAd", [false, false]);
-    document.getElementById("btnIsAppOpenLoaded").onclick = () => execResolveReject("isAppOpenAdLoaded");
-    document.getElementById("btnShowAppOpen").onclick = () => execResolveReject("showAppOpenAd");
-    document.getElementById("btnDestroyAppOpen").onclick = () => execResolveReject("destroyAppOpenAd");
-  });
-})();
+app.initialize();
