@@ -603,13 +603,79 @@ interface AdError {
 }
 
 interface Document {
+  /**
+   * Called when the ad content has been successfully loaded.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_loaded', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content fails to load.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   *  console.log("Error: " + ev.detail.message)
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_load_failed', listener: (ev: CustomEvent<AdError>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content fails to show.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   *  console.log("Error: " + ev.detail.message)
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_show_failed', listener: (ev: CustomEvent<AdError>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content is successfully shown.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_showed', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when an ad impression occurs.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_impressions', listener: (ev: CustomEvent<AdContentInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content is clicked by the user
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_clicked', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content is dismissed.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_dismissed', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when a user earns a reward from the ad.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_reward', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
 
   removeEventListener(type: 'casai_ad_loaded', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
