@@ -23,3 +23,7 @@ Thumbs.db
 *.log
 *.swp
 *.user
+
+.idea/
+.vscode/
+*.iml
