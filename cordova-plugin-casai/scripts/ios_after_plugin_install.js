@@ -3,13 +3,10 @@
 const helper = require('./helper');
 
 module.exports = function (context) {
-  console.log('CAS iOS prepare Podfile', JSON.stringify(context));
-  
   try {
-    const platform = 'ios';
-    let pluginConfig = helper.getCASPluginConfig(context, platform);
-    let solutions = helper.getCASSolutions(pluginConfig, platform);
-    let adapters = helper.getCASAdapters(pluginConfig, platform);
+    let config = new helper.CASConfig(context, 'ios');
+    let solutions = config.getCASSolutions();
+    let adapters = config.getCASAdapters();
     let pods = [...solutions, ...adapters].map(helper.buildPodLine);
 
     helper.updatePodfile(context, pods);

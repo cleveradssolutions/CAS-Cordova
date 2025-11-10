@@ -1,11 +1,11 @@
 {
-  "name": "io.cordova.hellocordova",
-  "displayName": "HelloCordova",
+  "name": "com.cleveradssolutions.sameple.cordova",
+  "displayName": "CASCordova",
   "version": "1.0.0",
-  "description": "A sample Apache Cordova application that responds to the deviceready event.",
+  "description": "A sample CAS.AI Cordova application.",
   "main": "index.js",
   "scripts": {
-    "plugin": "cordova plugin rm cordova-plugin-casai --nosave --verbose && cordova plugin add ../cordova-plugin-casai --link --save --verbose",
+    "plugin": "cordova plugin rm cordova-plugin-casai --nosave && cordova plugin add ../cordova-plugin-casai --link --save",
     "android": "cordova platform rm android --nosave && cordova platform add android && cordova prepare android --verbose",
     "ios": "cordova platform rm ios --nosave && cordova platform add ios && cordova prepare ios --verbose"
   },
@@ -19,10 +19,10 @@
       "cordova-plugin-casai": {
         "IOS_CAS_ID": "demo",
         "IOS_CAS_SOLUTIONS": "-",
-        "IOS_CAS_ADAPTERS": "mintegral",
-        "ANDROID_CAS_SOLUTIONS": "families",
-        "ANDROID_CAS_ADAPTERS": "googleAds",
-        "ANDROID_USE_AD_ID": "false",
+        "IOS_CAS_ADAPTERS": "-",
+        "ANDROID_CAS_SOLUTIONS": "-",
+        "ANDROID_CAS_ADAPTERS": "-",
+        "ANDROID_USE_AD_ID": "true",
         "IOS_USER_TRACKING_USAGE": "Your data will remain confidential and will only be used to provide you a better and personalised ad experience"
       }
     },
@@ -35,9 +35,7 @@
     "cordova": "^12.0.0",
     "cordova-android": "^14.0.1",
     "cordova-ios": "^7.1.1",
+    "cordova-plugin-casai": "file:../cordova-plugin-casai",
     "rimraf": "^6.1.0"
-  },
-  "dependencies": {
-    "cordova-plugin-casai": "file:../cordova-plugin-casai"
   }
 }

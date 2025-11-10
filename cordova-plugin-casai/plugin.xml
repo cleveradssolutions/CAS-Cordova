@@ -40,7 +40,7 @@
         <preference name="ANDROID_CAS_ADAPTERS" default="-" />
         <!-- Is allowed Google AD_ID to use. Valid values "true" and "false". -->
         <preference name="ANDROID_USE_AD_ID" default="true" />
-        <hook type="before_prepare" src="scripts/android_before_prepare.js" />
+        <hook type="after_plugin_install" src="scripts/android_after_plugin_install.js" />
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="CASMobileAds" >
                 <param name="android-package" value="com.cleveradssolutions.plugin.cordova.CASMobileAds"/>
@@ -59,7 +59,7 @@
     <platform name="ios">
         <!-- In most cases, a CAS ID is the same as your app store ID. 
             You can leave the "demo" value only for testing purposes. -->
-        <preference name="IOS_CAS_ID" default="" />
+        <preference name="IOS_CAS_ID" default="demo" />
         <!-- Valid values "Optimal" and "Famileis" and "-" for none. -->
         <preference name="IOS_CAS_SOLUTIONS" default="-" />
         <!-- Valid values from adapter names: https://docs.page/cleveradssolutions/docs/iOS/Mediated-Networks 
@@ -69,7 +69,7 @@
         <preference name="IOS_USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
         <framework src="AppTrackingTransparency.framework" weak="true" />
         <hook type="before_compile" src="scripts/ios_before_compile.js" />
-        <hook type="before_plugin_install" src="scripts/ios_before_plugin_install.js" />
+        <hook type="after_plugin_install" src="scripts/ios_after_plugin_install.js" />
         <hook type="before_plugin_uninstall" src="scripts/ios_before_plugin_uninstall.js" />
         <config-file target="config.xml" parent="/*">
             <feature name="CASMobileAds">
@@ -87,6 +87,9 @@
                 <pod name="CleverAdsSolutions-Base" spec="4.4.2" swift-version="5.0" />
             </pods>
         </podspec>
+        <config-file target="*-Info.plist" parent="CASAIAppIdentifier">
+            <string>$IOS_CAS_ID</string>
+        </config-file>
         <config-file target="*-Info.plist" parent="NSUserTrackingUsageDescription">
             <string>$IOS_USER_TRACKING_USAGE</string>
         </config-file>

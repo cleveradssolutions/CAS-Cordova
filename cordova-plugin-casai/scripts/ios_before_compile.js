@@ -5,16 +5,19 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 module.exports = function (context) {
-  let config = helper.getCASPluginConfig(context, 'ios');
+  let config = new helper.CASConfig(context, 'ios');
   let rubyScript = path.join(context.opts.plugin.dir, 'scripts', 'casIOSConfig.rb');
 
-  var casId = 'demo';
-  if (config['IOS_CAS_ID']) {
-    casId = config['IOS_CAS_ID'];
+  var casId = config.findVariable('IOS_CAS_ID');
+  if (casId) {
     console.log('CAS iOS configuration with ID: ' + casId);
   } else {
-    console.error(
-      '⚠️ Please add CAS plugin --variable IOS_CAS_ID=value for iOS App to configure XCode project. You can leave the "demo" value only for testing purposes.',
+    casId = 'demo';
+  }
+  if (casId == 'demo') {
+    console.warn('⚠️ iOS project is configured with a demo CAS ID for integration testing only.');
+    console.warn(
+      'Please specify --variable IOS_CAS_ID=value with the registered CAS ID for cordova-plugin-casai, or in config.xml. In most cases, the CAS ID on iOS is the same as your iTunes App ID.',
     );
   }
 
@@ -23,7 +26,7 @@ module.exports = function (context) {
     return;
   }
 
-  let projectName = helper.getAppName(context);
+  let projectName = config.getAppName();
   if (!projectName) {
     console.error('❌ Invalid config.xml file: Project <name> not found!');
     return;
