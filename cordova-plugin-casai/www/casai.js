@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-var cordova = require('cordova');
-
-const isFunction = function isFunction(functionObj) {
-  return typeof functionObj === 'function';
-};
+var exec = require('cordova/exec');
 
 const nativeCall = function nativeCall(name, params) {
   cordova.exec(null, null, 'CASCMobileAds', name, params);
@@ -30,41 +26,32 @@ const nativePromise = function nativePromise(name, params) {
   });
 };
 
-var AdFormat;
-(function (AdFormat) {
-  AdFormat['BANNER'] = 'Banner';
-  AdFormat['MREC'] = 'MediumRectangle';
-  AdFormat['APPOPEN'] = 'AppOpen';
-  AdFormat['INTERSTITIAL'] = 'Interstitial';
-  AdFormat['REWARDED'] = 'Rewarded';
-})(AdFormat || (AdFormat = {}));
-
-var BannerAdSize;
-(function (BannerAdSize) {
-  BannerAdSize['BANNER'] = 'B';
-  BannerAdSize['LEADERBOARD'] = 'L';
-  BannerAdSize['ADAPTIVE'] = 'A';
-  BannerAdSize['INLINE'] = 'I';
-  BannerAdSize['SMART'] = 'S';
-})(BannerAdSize || (BannerAdSize = {}));
-
-var AdPosition;
-(function (AdPosition) {
-  AdPosition['TOP_CENTER'] = 0;
-  AdPosition['TOP_LEFT'] = 1;
-  AdPosition['TOP_RIGHT'] = 2;
-  AdPosition['BOTTOM_CENTER'] = 3;
-  AdPosition['BOTTOM_LEFT'] = 4;
-  AdPosition['BOTTOM_RIGHT'] = 5;
-  AdPosition['MIDDLE_CENTER'] = 6;
-  AdPosition['MIDDLE_LEFT'] = 7;
-  AdPosition['MIDDLE_RIGHT'] = 8;
-})(AdPosition || (AdPosition = {}));
-
 var casai = {
-  Format: AdFormat,
-  Size: BannerAdSize,
-  Position: AdPosition,
+  Format: {
+    BANNER: 'Banner',
+    MREC: 'MediumRectangle',
+    APPOPEN: 'AppOpen',
+    INTERSTITIAL: 'Interstitial',
+    REWARDED: 'Rewarded',
+  },
+  Size: {
+    BANNER: 'B',
+    LEADERBOARD: 'L',
+    ADAPTIVE: 'A',
+    INLINE: 'I',
+    SMART: 'S',
+  },
+  Position: {
+    TOP_CENTER: 0,
+    TOP_LEFT: 1,
+    TOP_RIGHT: 2,
+    BOTTOM_CENTER: 3,
+    BOTTOM_LEFT: 4,
+    BOTTOM_RIGHT: 5,
+    MIDDLE_CENTER: 6,
+    MIDDLE_LEFT: 7,
+    MIDDLE_RIGHT: 8,
+  },
 
   initialize: function ({
     casIdForAndroid,
@@ -231,4 +218,6 @@ var casai = {
 
 if (typeof module !== undefined && module.exports) {
   module.exports = casai;
+} else {
+  window.casai = casai;
 }

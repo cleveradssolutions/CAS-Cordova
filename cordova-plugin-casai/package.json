@@ -10,9 +10,6 @@
   },
   "homepage": "https://docs.page/cleveradssolutions/docs/Cordova",
   "types": "./types/index.d.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [
     "cordova",
     "echosystem:cordova",
@@ -28,7 +25,8 @@
     "id": "cordova-plugin-casai",
     "platforms": [
       "android",
-      "ios"
+      "ios",
+      "browser"
     ]
   }
 }

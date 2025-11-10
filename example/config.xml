@@ -6,6 +6,22 @@
         Apache Cordova Team
     </author>
     <content src="index.html" />
+    <access origin="*" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
+    <platform name="android">
+        <preference name="android-targetSdkVersion" value="35" />
+        <preference name="GradlePluginKotlinEnabled" value="true" />
+        <preference name="GradlePluginKotlinVersion" value="2.0.21" />
+        <allow-intent href="market:*" />
+    </platform>
+    <platform name="ios">
+        <allow-intent href="itms:*" />
+        <allow-intent href="itms-apps:*" />
+        <preference name="deployment-target" value="13.0" />
+        <preference name="SwiftVersion" value="5.0" />
+    </platform>
+    <plugin name="cordova-plugin-casai" spec="*">
+        <variable name="IOS_CAS_ID" value="demo" />
+    </plugin>
 </widget>
