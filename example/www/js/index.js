@@ -1,15 +1,3 @@
-(function() {
-  const SERVICE = "CASMobileAds";
-
-  function log(...args) {
-    const el = document.getElementById("log");
-    const line = document.createElement("div");
-    line.textContent = args.map((x)=> (typeof x==='object'? JSON.stringify(x): String(x))).join(' ');
-    el.prepend(line);
-    console.log(...args);
-  }
-
-
 var app = {
     initialize: function () {
         document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
@@ -33,7 +21,6 @@ var app = {
                 targetAudience: 0,
                 debugGeography: "eea",
             });
-            this.log("CAS initialized");
             console.log('CAS initialized:', result);
         } catch (err) {
             console.error('CAS init error:', err);
