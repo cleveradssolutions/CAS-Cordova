@@ -76,11 +76,11 @@
         <hook type="before_plugin_uninstall" src="scripts/ios_before_plugin_uninstall.js" />
         <config-file target="config.xml" parent="/*">
             <feature name="CASMobileAds">
-                <param name="ios-package" value="CASCMobileAds"/>
+                <param name="ios-package" value="CASMobileAds"/>
                 <param name="onload" value="true" />
             </feature>
         </config-file>
-        <source-file src="src/ios/CASCMobileAds.swift" />
+        <source-file src="src/ios/CASMobileAds.swift" />
         <podspec>
             <config>
                 <source url="https://github.com/CocoaPods/Specs.git"/>

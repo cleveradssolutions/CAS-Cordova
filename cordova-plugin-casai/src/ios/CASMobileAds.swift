@@ -1,7 +1,7 @@
 import CleverAdsSolutions
 
-@objc(CASCMobileAds)
-class CASCMobileAds: CDVPlugin {
+@objc(CASMobileAds)
+class CASMobileAds: CDVPlugin {
     
     // MARK: - Properties
     
@@ -671,7 +671,7 @@ class CASCMobileAds: CDVPlugin {
 
 // MARK: - Cordova Event Bridge
 
-extension CASCMobileAds {
+extension CASMobileAds {
     func fireDocumentEvent(_ name: String, body: [String: Any]? = nil) {
         var jsonBody = "{}"
         if let body = body,
@@ -688,7 +688,7 @@ extension CASCMobileAds {
 
 // MARK: - CASImpressionDelegate
 
-extension CASCMobileAds: CASImpressionDelegate {
+extension CASMobileAds: CASImpressionDelegate {
     func adDidRecordImpression(info: AdContentInfo) {
         fireDocumentEvent("casai_ad_impression", body: [
             "adType": info.format.description,
@@ -701,7 +701,7 @@ extension CASCMobileAds: CASImpressionDelegate {
 
 // MARK: - CASBannerDelegate
 
-extension CASCMobileAds: CASBannerDelegate {
+extension CASMobileAds: CASBannerDelegate {
     func bannerAdViewDidLoad(_ view: CASBannerView) {
         fireDocumentEvent("casai_ad_loaded", body: [
             "adType": view.contentInfo?.format.description ?? ""
@@ -724,7 +724,7 @@ extension CASCMobileAds: CASBannerDelegate {
 
 // MARK: - CASScreenContentDelegate
 
-extension CASCMobileAds: CASScreenContentDelegate {
+extension CASMobileAds: CASScreenContentDelegate {
     func screenAdDidLoadContent(_ ad: any CASScreenContent) {
         fireDocumentEvent("casai_ad_loaded", body: [
             "adType": ad.contentInfo?.format.description ?? ""
