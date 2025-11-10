@@ -35,26 +35,32 @@ class CASCMobileAds: CDVPlugin {
         // /* 8 */ mediationExtras ?? {}
         
         guard let args = command.arguments, args.count >= 9 else {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid arguments")
+            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid arguments count")
             self.commandDelegate.send(result, callbackId: command.callbackId)
-            print("sdasadasddsa")
             return
         }
         
         let casIdForIOS = args[2] as? String ?? ""
         let targetAudience = args[3] as? Int ?? 0
-        let showConsentForm = args[4] as? Bool ?? false
+        let showConsentForm = args[4] as? Bool ?? true
         let forceTestAds = args[5] as? Bool ?? false
         let testDeviceIds = args[6] as? [String] ?? []
-        // let debugGeography = args[7] as? String ?? "eea"
-        // let mediationExtras = args[8] as? Bool ?? false
+        let debugGeography = args[7] as? String ?? "eea"
+        let mediationExtras = args[8] as? [String: Any] ?? [:]
         
         CAS.targetingOptions.age = targetAudience
         
         let builder = CAS.buildManager().withTestAdMode(forceTestAds)
         let consentFlow = ConsentFlow(isEnabled: showConsentForm)
-        
         builder.withConsentFlow(consentFlow)
+        
+        // Test devices
+        if !testDeviceIds.isEmpty {
+            CAS.settings.setTestDevice(ids: testDeviceIds)
+        }
+        
+        // Debug mode if needed
+        CAS.settings.debugMode = (debugGeography == "debug")
         
         self.casId = casIdForIOS
         self.manager = builder.create(withCasId: casIdForIOS)
@@ -76,9 +82,9 @@ class CASCMobileAds: CDVPlugin {
         let ifRequired = args[0] as? Bool ?? true
         let debugGeographyValue = args[1] as? Int ?? 0
         
-        let debugGeography = CleverAdsSolutions.CASConsentFlow.DebugGeography(rawValue: debugGeographyValue) ?? .disabled
+        let debugGeography = CASConsentFlow.DebugGeography(rawValue: debugGeographyValue) ?? .disabled
         
-        let consentFlow = CleverAdsSolutions.CASConsentFlow(isEnabled: true)
+        let consentFlow = CASConsentFlow(isEnabled: true)
             .withDebugGeography(debugGeography)
             .withViewControllerToPresent(self.viewController)
             .withCompletionHandler { status in
@@ -145,7 +151,7 @@ class CASCMobileAds: CDVPlugin {
     @objc func setUserGender(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setUserGender', [gender]);
         guard let genderInt = command.argument(at: 0) as? Int else { return }
-        if let gender = CleverAdsSolutions.Gender(rawValue: genderInt) {
+        if let gender = Gender(rawValue: genderInt) {
             CAS.targetingOptions.gender = gender
         }
     }
@@ -399,6 +405,11 @@ class CASCMobileAds: CDVPlugin {
                     mrec.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
                     mrec.trailingAnchor.constraint(equalTo: safe.trailingAnchor)
                 ]
+            case 6: // MIDDLE_CENTER
+                constraints = [
+                    mrec.topAnchor.constraint(equalTo: safe.topAnchor),
+                    mrec.centerXAnchor.constraint(equalTo: safe.centerXAnchor)
+                ]
             case 7: // MIDDLE_LEFT
                 constraints = [
                     mrec.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
@@ -512,15 +523,11 @@ class CASCMobileAds: CDVPlugin {
     
     @objc func loadInterstitialAd(_ command: CDVInvokedUrlCommand) {
         // nativePromise('loadInterstitialAd', [autoReload ?? false, autoShow ?? false, minInterval ?? 0]);
-        guard let args = command.arguments, args.count >= 3 else {
-            let result = CDVPluginResult(status: .error, messageAs: "Invalid Interstitial arguments")
+        guard let args = command.arguments else {
+            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid Interstitial arguments")
             commandDelegate.send(result, callbackId: command.callbackId)
             return
-        }
-        
-        let autoReload = args[0] as? Bool ?? false
-        let autoShow = args[1] as? Bool ?? false
-        let minInterval = args[2] as? Int ?? 0
+        }              
         
         DispatchQueue.main.async {
             self.interstitialAd = CASInterstitial(casID: self.casId ?? "")
@@ -529,21 +536,29 @@ class CASCMobileAds: CDVPlugin {
             ad.delegate = self
             ad.impressionDelegate = self
             
-            ad.isAutoloadEnabled = autoReload
-            ad.isAutoshowEnabled = autoShow
-            ad.minInterval = minInterval
+            if let autoReload = args[0] as? Bool {
+                ad.isAutoloadEnabled = autoReload
+            }
+            
+            if let isAutoshowEnabled = args[1] as? Bool {
+                ad.isAutoshowEnabled = isAutoshowEnabled
+            }
+            
+            if let minInterval = args[2] as? Int {
+                ad.minInterval = minInterval
+            }
             
             ad.loadAd()
             
-            let result = CDVPluginResult(status: .ok, messageAs: "Interstitial loading started")
+            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Interstitial loading started")
             self.commandDelegate.send(result, callbackId: command.callbackId)
         }
     }
-    
+   
     @objc func isInterstitialAdLoaded(_ command: CDVInvokedUrlCommand) {
         // nativePromise('isInterstitialAdLoaded', []);
         let isLoaded = self.interstitialAd?.isAdLoaded ?? false
-        let result = CDVPluginResult(status: .ok, messageAs: isLoaded)
+        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: isLoaded)
         commandDelegate.send(result, callbackId: command.callbackId)
     }
     
@@ -551,30 +566,31 @@ class CASCMobileAds: CDVPlugin {
         // nativeCall('showInterstitialAd', []);
         DispatchQueue.main.async {
             guard let ad = self.interstitialAd else {
-                let result = CDVPluginResult(status: .error, messageAs: "Interstitial not initialized")
+                let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Interstitial not initialized")
                 self.commandDelegate.send(result, callbackId: command.callbackId)
                 return
             }
             
             guard ad.isAdLoaded else {
-                let result = CDVPluginResult(status: .error, messageAs: "Interstitial not loaded")
+                let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Interstitial not loaded")
                 self.commandDelegate.send(result, callbackId: command.callbackId)
                 return
             }
             
             ad.present(from: self.viewController)
             
-            let result = CDVPluginResult(status: .ok, messageAs: "Interstitial presented")
+            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Interstitial presented")
             self.commandDelegate.send(result, callbackId: command.callbackId)
         }
     }
+    
     
     @objc func destroyInterstitialAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('destroyInterstitialAd', []);
         DispatchQueue.main.async {
             self.interstitialAd?.destroy()
             self.interstitialAd = nil
-            let result = CDVPluginResult(status: .ok, messageAs: "Interstitial destroyed")
+            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Interstitial destroyed")
             self.commandDelegate.send(result, callbackId: command.callbackId)
         }
     }
@@ -587,15 +603,16 @@ class CASCMobileAds: CDVPlugin {
             return
         }
         
-        let autoReload = args[0] as? Bool ?? false
-        
         DispatchQueue.main.async {
             self.rewardedAd = CASRewarded(casID: self.casId ?? "")
             guard let ad = self.rewardedAd else { return }
             
             ad.delegate = self
             ad.impressionDelegate = self
-            ad.isAutoloadEnabled = autoReload
+            
+            if let autoReload =  args[0] as? Bool {
+                ad.isAutoloadEnabled = autoReload
+            }
             
             // FIXME: Need this?
             ad.isExtraFillInterstitialAdEnabled = true
