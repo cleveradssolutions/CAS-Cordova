@@ -11,6 +11,7 @@
     <allow-intent href="https://*/*" />
     <platform name="android">
         <preference name="android-targetSdkVersion" value="35" />
+        <preference name="GradlePluginKotlinEnabled" value="true" />
         <preference name="GradlePluginKotlinVersion" value="2.0.21" />
         <allow-intent href="market:*" />
     </platform>

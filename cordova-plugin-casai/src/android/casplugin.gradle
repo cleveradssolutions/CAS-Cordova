@@ -55,6 +55,8 @@ cdvPluginPostBuildExtras.add({
     cas {
         // CAS Plugin hook
         useAdvertisingId = true
+        adapters {
+        }
         // End CAS Plugin hook
     }
 });
