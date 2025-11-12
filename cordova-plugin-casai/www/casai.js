@@ -131,8 +131,8 @@ var casai = {
     ]);
   },
 
-  showBannerAd: function ({ position }) {
-    nativeCall('showBannerAd', [position]);
+  showBannerAd: function ({ position, offsetX = 0, offsetY = 0 }) {
+  nativeCall('showBannerAd', [position, offsetX, offsetY]);
   },
 
   hideBannerAd: function () {
