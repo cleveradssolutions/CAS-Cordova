@@ -3,31 +3,38 @@ var app = {
         document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
     },
     
-    onDeviceReady: function () {
-        document.querySelector('.listening').style.display = 'none';
-        document.querySelector('.received').style.display = 'block';
+    async onDeviceReady() {
+        /** @type {HTMLElement|null} */
+        const listeningEl = document.querySelector('.listening');
+        /** @type {HTMLElement|null} */
+        const receivedEl = document.querySelector('.received');
+
+        if (listeningEl) listeningEl.style.display = 'none';
+        if (receivedEl) receivedEl.style.display = 'block';
+
         this.createTestUI();
         
         console.log('Device is ready, initializing CAS...');
-        this.initCAS();
+        await this.initCAS();
     },
     
-    initCAS: async function () {
+    async initCAS() {
         try {
             const result = await window.casai.initialize({
+                casIdForAndroid: "test-android-id",
                 casIdForIOS: "test-ios-id",
-                forceTestAds: true,
-                showConsentFormIfRequired: false,
-                targetAudience: 0,
+                targetAudience: "notchildren",
+                forceTestAds: true,                
+                showConsentFormIfRequired: false,                
                 debugGeography: "eea",
-            });
+            });            
             console.log('CAS initialized:', result);
         } catch (err) {
             console.error('CAS init error:', err);
         }
     },
     
-    createTestUI: function () {
+    createTestUI() {
         const container = document.createElement('div');
         container.style.display = 'flex';
         container.style.flexDirection = 'column';
@@ -68,41 +75,52 @@ var app = {
     },
     
     // Banner
-    loadBanner: async function () {
+    async loadBanner() {
         console.log('Loading banner...');
-        await window.casai.loadBannerAd(['A', 320, 50, true, 30]); // Adaptive banner
+        await window.casai.loadBannerAd({
+            adSize: window.casai.Size.ADAPTIVE,
+            autoReload: true,
+            refreshInterval: 30
+        });
     },
     
-    showBanner: async function (position) {
+    showBanner(position) {
         console.log('Showing banner...');
-        await window.casai.showBannerAd([position]);
+        window.casai.showBannerAd({ position });
     },
     
-    hideBanner: async function () {
+    hideBanner() {
         console.log('Hidding banner...');
-        await window.casai.hideBannerAd();
+        window.casai.hideBannerAd();
     },
     
-    destroyBanner: async function () {
+    destroyBanner() {
         console.log('Destroy banner...');
-        await window.casai.destroyBannerAd()
+        window.casai.destroyBannerAd()
     },
     
     // AppOpen
-    loadAppOpen: async function () {
+    async loadAppOpen() {
         console.log('Loading appopen...');
-        await window.casai.loadAppOpenAd([true]);
+        await window.casai.loadAppOpenAd({
+            autoReload: true,
+            autoShow: false
+        });
     },
     
-    showAppOpen: async function () {
+    async showAppOpen() {
         console.log('Show appopen...');
         await window.casai.showAppOpenAd();
     },
     
     // Interstitial
-    loadInterstitial: async function () {
-        console.log('Loading interstitial...');
-        await window.casai.loadInterstitialAd([true]);
+    async loadInterstitial() {
+        console.log('Loading Interstitial...');
+        await window.casai.loadInterstitialAd({
+            autoReload: true,
+            autoShow: false,
+            minInterval: 5
+        });
     },
     
     showInterstitial: async function () {
@@ -111,35 +129,35 @@ var app = {
     },
     
     // Rewarded
-    loadRewarded: async function () {
+    async loadRewarded() {
         console.log('Loading rewarded...');
-        await window.casai.loadRewardedAd([true]);
+        await window.casai.loadRewardedAd({ autoReload: true });
     },
     
-    showRewarded: async function () {
-        console.log('Show rewarded...');
+    async showRewarded() {
+        console.log('Showing Rewarded...');
         await window.casai.showRewardedAd();
     },
     
     // MREC
-    loadMREC: async function () {
-        console.log('Load MREC...');
-        await window.casai.loadMRecAd([true, 30]);
+    async loadMREC() {
+        console.log('Loading MREC...');
+        await window.casai.loadMRecAd({ autoReload: true, refreshInterval: 30 });
     },
     
-    showMREC: async function ({ position } = {}) { // 6 = MIDDLE_CENTER (default)
-        console.log('Show MREC...');
-        await window.casai.showMRecAd([6]);
+    async showMREC(position) {
+        console.log('Showing MREC...');
+        window.casai.showMRecAd({ position });
     },
     
-    hideMREC: async function () {
+    hideMREC() {
         console.log('Hide MREC...');
-        await window.casai.hideMRecAd();
+        window.casai.hideMRecAd();
     },
     
-    destroyMREC: async function () {
+    destroyMREC() {
         console.log('Destroy MREC...');
-        await window.casai.destroyMRecAd();
+        window.casai.destroyMRecAd();
     },
 };
 
