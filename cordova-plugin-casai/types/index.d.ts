@@ -34,7 +34,7 @@ type PrivacyGeography =
   /** Geography appears as in a region with no regulation in force. */
   | 'unregulated';
 
-/** Result of the SDK initialization attempt. */
+/** Represents the result of {@link CASMobileAds.initialize}. */
 interface InitializationStatus {
   /**
    * Initialization error or `undefined` if success.
@@ -121,14 +121,6 @@ interface CASMobileAds {
    * @returns A Promise that resolves with the initialization status.
    */
   initialize(options: {
-    /**
-     * The CAS ID for Android platform.
-     */
-    casIdForAndroid: string;
-    /**
-     * The CAS ID for iOS platform.
-     */
-    casIdForIOS: string;
     /**
      * Indicates the target {@link AdAudience} of the app for regulatory and content purposes.
      * This may affect how the SDK handles data collection, personalization,
@@ -309,6 +301,14 @@ interface CASMobileAds {
      * Position on the screen where the banner should appear.
      */
     position: AdPosition;
+    /**
+     * Place AdView at the X offset in DP, where the origin is the selected corner (AdPosition) of the screen.
+     */
+    offsetX?: number;
+    /**
+     * Place AdView at the Y offset in DP, where the origin is the selected corner (AdPosition) of the screen.
+     */
+    offsetY?: number;
   }): void;
 
   /**
@@ -337,7 +337,7 @@ interface CASMobileAds {
      * If enabled, the ad will automatically retry loading the ad if an error occurs during the loading process.
      * @default enabled.
      */
-    autoReload: boolean;
+    autoReload?: boolean;
     /**
      * Sets the refresh interval in seconds for displaying ads.
      * The countdown runs only while the view is visible.
@@ -345,7 +345,7 @@ interface CASMobileAds {
      * Set `0` to disable. Works regardless of `autoReload`.
      * @default 30 seconds
      */
-    refreshInterval: number;
+    refreshInterval?: number;
   }): Promise<void>;
 
   /**
@@ -357,7 +357,15 @@ interface CASMobileAds {
     /**
      * Position on the screen where the banner should appear.
      */
-    position: AdPosition;
+    position?: AdPosition;
+    /**
+     * Place AdView at the X offset in DP, where the origin is the selected corner (AdPosition) of the screen.
+     */
+    offsetX?: number;
+    /**
+     * Place AdView at the Y offset in DP, where the origin is the selected corner (AdPosition) of the screen.
+     */
+    offsetY?: number;
   }): void;
 
   /**
@@ -496,7 +504,7 @@ interface CASMobileAds {
    *
    * @returns A Promise that resolves after the ad is dismissed, or rejects with an error if the ad fails to show.
    */
-  showRewardedAd(): Promise<void>;
+  showRewardedAd(): Promise<RewardedAdInfo>;
 
   /**
    * Destroys the currently loaded Rewarded ad and frees up resources.
@@ -545,6 +553,16 @@ interface AdInfo {
    * The format of the ad that is shown.
    */
   format: AdFormat;
+}
+
+/**
+ * Represents the result of {@link CASMobileAds.showRewardedAd}.
+ */
+interface RewardedAdInfo {
+  /**
+   * Indicates whether the user has earned a reward from the ad.
+   */
+  isUserEarnReward: boolean;
 }
 
 interface AdContentInfo {

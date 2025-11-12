@@ -54,8 +54,6 @@ var casai = {
   },
 
   initialize: function ({
-    casIdForAndroid,
-    casIdForIOS,
     targetAudience,
     showConsentFormIfRequired,
     forceTestAds,
@@ -65,14 +63,12 @@ var casai = {
   }) {
     return nativePromise('initialize', [
       /* 0 */ cordova.version,
-      /* 1 */ casIdForAndroid ?? '',
-      /* 2 */ casIdForIOS ?? '',
-      /* 3 */ targetAudience,
-      /* 4 */ showConsentFormIfRequired ?? true,
-      /* 5 */ forceTestAds ?? false,
-      /* 6 */ testDeviceIds ?? [],
-      /* 7 */ debugGeography ?? 'eea',
-      /* 8 */ mediationExtras ?? {},
+      /* 1 */ targetAudience,
+      /* 2 */ showConsentFormIfRequired ?? true,
+      /* 3 */ forceTestAds ?? false,
+      /* 4 */ testDeviceIds ?? [],
+      /* 5 */ debugGeography ?? 'eea',
+      /* 6 */ mediationExtras ?? {},
     ]);
   },
 
@@ -131,8 +127,8 @@ var casai = {
     ]);
   },
 
-  showBannerAd: function ({ position, offsetX = 0, offsetY = 0 }) {
-  nativeCall('showBannerAd', [position, offsetX, offsetY]);
+  showBannerAd: function ({ position, offsetX, offsetY }) {
+    nativeCall('showBannerAd', [position, offsetX ?? 0, offsetY ?? 0]);
   },
 
   hideBannerAd: function () {
@@ -149,8 +145,8 @@ var casai = {
     return nativePromise('loadMRecAd', [autoReload ?? true, refreshInterval ?? 30]);
   },
 
-  showMRecAd: function ({ position }) {
-    nativeCall('showMRecAd', [position]);
+  showMRecAd: function ({ position, offsetX, offsetY }) {
+    nativeCall('showMRecAd', [position, offsetX ?? 0, offsetY ?? 0]);
   },
 
   hideMRecAd: function () {
@@ -172,7 +168,7 @@ var casai = {
   },
 
   showAppOpenAd: function () {
-    nativeCall('showAppOpenAd', []);
+    return nativePromise('showAppOpenAd', []);
   },
 
   destroyAppOpenAd: function () {
@@ -190,7 +186,7 @@ var casai = {
   },
 
   showInterstitialAd: function () {
-    nativeCall('showInterstitialAd', []);
+    return nativePromise('showInterstitialAd', []);
   },
 
   destroyInterstitialAd: function () {
@@ -208,7 +204,7 @@ var casai = {
   },
 
   showRewardedAd: function () {
-    nativeCall('showRewardedAd', []);
+    return nativePromise('showRewardedAd', []);
   },
 
   destroyRewardedAd: function () {
