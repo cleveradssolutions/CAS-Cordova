@@ -14,34 +14,41 @@ internal class ScreenContentCallback(
     private val resolveOnReward: Boolean = false
 ) : ScreenAdContentCallback(), OnAdImpressionListener, OnRewardEarnedListener {
 
-    private var pendingLoadPromise: CallbackContext? = null
-    private var pendingShowPromise: CallbackContext? = null
+    var pendingLoadPromise: CallbackContext? = null
+    var pendingShowPromise: CallbackContext? = null
 
-    fun setPending(load: CallbackContext? = null, show: CallbackContext? = null) {
-        if (load != null) pendingLoadPromise = load
-        if (show != null) pendingShowPromise = show
+    private fun clearLoadSuccess() {
+        pendingLoadPromise?.success()
+        pendingLoadPromise = null
+    }
+
+    private fun clearShowSuccess() {
+        pendingShowPromise?.success()
+        pendingShowPromise = null
     }
 
     override fun onAdLoaded(ad: AdContentInfo) {
-        pendingLoadPromise?.success()
-        pendingLoadPromise = null
         plugin.emitEvent(PluginEvents.LOADED, adInfoJson(adFormat))
+        clearLoadSuccess()
     }
 
     override fun onAdFailedToLoad(format: AdFormat, error: AdError) {
-        plugin.emitEvent(PluginEvents.LOAD_FAILED, errorJson(adFormat, error))
-        pendingLoadPromise?.error(error.message)
+        val error = errorJson(adFormat, error)
+        plugin.emitEvent(PluginEvents.LOAD_FAILED, error)
+        pendingLoadPromise?.error(error.toString())
         pendingLoadPromise = null
     }
 
-    override fun onAdShowed(ad: AdContentInfo) {
-        plugin.emitEvent(PluginEvents.SHOWED, adInfoJson(adFormat))
+    override fun onAdFailedToShow(format: AdFormat, error: AdError) {
+        val error = errorJson(adFormat, error)
+        plugin.emitEvent(PluginEvents.SHOW_FAILED, error)
+        pendingShowPromise?.error(error.toString())
+        pendingShowPromise = null
     }
 
-    override fun onAdFailedToShow(format: AdFormat, error: AdError) {
-        plugin.emitEvent(PluginEvents.SHOW_FAILED, errorJson(adFormat, error))
-        pendingShowPromise?.error(errorJson(adFormat, error).toString())
-        pendingShowPromise = null
+
+    override fun onAdShowed(ad: AdContentInfo) {
+        plugin.emitEvent(PluginEvents.SHOWED, adInfoJson(adFormat))
     }
 
     override fun onAdClicked(ad: AdContentInfo) {
@@ -53,18 +60,13 @@ internal class ScreenContentCallback(
     }
 
     override fun onAdDismissed(ad: AdContentInfo) {
-        if (!resolveOnReward) {
-            pendingShowPromise?.success()
-            pendingShowPromise = null
-        }
+        if (!resolveOnReward) clearShowSuccess()
         plugin.emitEvent(PluginEvents.DISMISSED, adInfoJson(adFormat))
     }
 
     override fun onUserEarnedReward(ad: AdContentInfo) {
         plugin.emitEvent(PluginEvents.REWARD, adInfoJson(adFormat))
-        if (resolveOnReward) {
-            pendingShowPromise?.success()
-            pendingShowPromise = null
-        }
+        if (resolveOnReward) clearShowSuccess()
     }
 }
+
