@@ -14,61 +14,46 @@
  * limitations under the License.
  */
 
-var cordova = require('cordova');
-
-const isFunction = function isFunction(functionObj) {
-  return typeof functionObj === 'function';
-};
+var exec = require('cordova/exec');
 
 const nativeCall = function nativeCall(name, params) {
-  cordova.exec(null, null, 'CASMobileAds', name, params);
+  exec(null, null, 'CASMobileAds', name, params);
 };
 
 const nativePromise = function nativePromise(name, params) {
   return new Promise(function (resolve, reject) {
-    cordova.exec(resolve, reject, 'CASMobileAds', name, params);
+    exec(resolve, reject, 'CASMobileAds', name, params);
   });
 };
 
-var AdFormat;
-(function (AdFormat) {
-  AdFormat['BANNER'] = 'Banner';
-  AdFormat['MREC'] = 'MediumRectangle';
-  AdFormat['APPOPEN'] = 'AppOpen';
-  AdFormat['INTERSTITIAL'] = 'Interstitial';
-  AdFormat['REWARDED'] = 'Rewarded';
-})(AdFormat || (AdFormat = {}));
-
-var BannerAdSize;
-(function (BannerAdSize) {
-  BannerAdSize['BANNER'] = 'B';
-  BannerAdSize['LEADERBOARD'] = 'L';
-  BannerAdSize['ADAPTIVE'] = 'A';
-  BannerAdSize['INLINE'] = 'I';
-  BannerAdSize['SMART'] = 'S';
-})(BannerAdSize || (BannerAdSize = {}));
-
-var AdPosition;
-(function (AdPosition) {
-  AdPosition['TOP_CENTER'] = 0;
-  AdPosition['TOP_LEFT'] = 1;
-  AdPosition['TOP_RIGHT'] = 2;
-  AdPosition['BOTTOM_CENTER'] = 3;
-  AdPosition['BOTTOM_LEFT'] = 4;
-  AdPosition['BOTTOM_RIGHT'] = 5;
-  AdPosition['MIDDLE_CENTER'] = 6;
-  AdPosition['MIDDLE_LEFT'] = 7;
-  AdPosition['MIDDLE_RIGHT'] = 8;
-})(AdPosition || (AdPosition = {}));
-
 var casai = {
-  Format: AdFormat,
-  Size: BannerAdSize,
-  Position: AdPosition,
+  Format: {
+    BANNER: 'Banner',
+    MREC: 'MediumRectangle',
+    APPOPEN: 'AppOpen',
+    INTERSTITIAL: 'Interstitial',
+    REWARDED: 'Rewarded',
+  },
+  Size: {
+    BANNER: 'B',
+    LEADERBOARD: 'L',
+    ADAPTIVE: 'A',
+    INLINE: 'I',
+    SMART: 'S',
+  },
+  Position: {
+    TOP_CENTER: 0,
+    TOP_LEFT: 1,
+    TOP_RIGHT: 2,
+    BOTTOM_CENTER: 3,
+    BOTTOM_LEFT: 4,
+    BOTTOM_RIGHT: 5,
+    MIDDLE_CENTER: 6,
+    MIDDLE_LEFT: 7,
+    MIDDLE_RIGHT: 8,
+  },
 
   initialize: function ({
-    casIdForAndroid,
-    casIdForIOS,
     targetAudience,
     showConsentFormIfRequired,
     forceTestAds,
@@ -78,14 +63,12 @@ var casai = {
   }) {
     return nativePromise('initialize', [
       /* 0 */ cordova.version,
-      /* 1 */ casIdForAndroid ?? '',
-      /* 2 */ casIdForIOS ?? '',
-      /* 3 */ targetAudience,
-      /* 4 */ showConsentFormIfRequired ?? true,
-      /* 5 */ forceTestAds ?? false,
-      /* 6 */ testDeviceIds ?? [],
-      /* 7 */ debugGeography ?? 'eea',
-      /* 8 */ mediationExtras ?? {},
+      /* 1 */ targetAudience,
+      /* 2 */ showConsentFormIfRequired ?? true,
+      /* 3 */ forceTestAds ?? false,
+      /* 4 */ testDeviceIds ?? [],
+      /* 5 */ debugGeography ?? 'eea',
+      /* 6 */ mediationExtras ?? {},
     ]);
   },
 
@@ -144,8 +127,8 @@ var casai = {
     ]);
   },
 
-  showBannerAd: function ({ position }) {
-    nativeCall('showBannerAd', [position]);
+  showBannerAd: function ({ position, offsetX, offsetY }) {
+    nativeCall('showBannerAd', [position, offsetX ?? 0, offsetY ?? 0]);
   },
 
   hideBannerAd: function () {
@@ -162,8 +145,8 @@ var casai = {
     return nativePromise('loadMRecAd', [autoReload ?? true, refreshInterval ?? 30]);
   },
 
-  showMRecAd: function ({ position }) {
-    nativeCall('showMRecAd', [position]);
+  showMRecAd: function ({ position, offsetX, offsetY }) {
+    nativeCall('showMRecAd', [position, offsetX ?? 0, offsetY ?? 0]);
   },
 
   hideMRecAd: function () {
@@ -185,7 +168,7 @@ var casai = {
   },
 
   showAppOpenAd: function () {
-    nativeCall('showAppOpenAd', []);
+    return nativePromise('showAppOpenAd', []);
   },
 
   destroyAppOpenAd: function () {
@@ -203,7 +186,7 @@ var casai = {
   },
 
   showInterstitialAd: function () {
-    nativeCall('showInterstitialAd', []);
+    return nativePromise('showInterstitialAd', []);
   },
 
   destroyInterstitialAd: function () {
@@ -221,7 +204,7 @@ var casai = {
   },
 
   showRewardedAd: function () {
-    nativeCall('showRewardedAd', []);
+    return nativePromise('showRewardedAd', []);
   },
 
   destroyRewardedAd: function () {
@@ -231,4 +214,6 @@ var casai = {
 
 if (typeof module !== undefined && module.exports) {
   module.exports = casai;
+} else {
+  window.casai = casai;
 }

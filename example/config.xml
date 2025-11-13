@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="io.cordova.hellocordova" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>HelloCordova</name>
-    <description>Sample Apache Cordova App</description>
+<widget id="com.cleveradssolutions.cordova.example" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>CASCordovaExample</name>
+    <description>Sample CAS.AI Cordova App</description>
     <author email="dev@cordova.apache.org" href="https://cordova.apache.org">
         Apache Cordova Team
     </author>
@@ -11,18 +11,17 @@
     <allow-intent href="https://*/*" />
     <platform name="android">
         <preference name="android-targetSdkVersion" value="35" />
+        <preference name="GradlePluginKotlinEnabled" value="true" />
+        <preference name="GradlePluginKotlinVersion" value="2.0.21" />
         <allow-intent href="market:*" />
     </platform>
     <platform name="ios">
         <allow-intent href="itms:*" />
         <allow-intent href="itms-apps:*" />
         <preference name="deployment-target" value="13.0" />
+        <preference name="SwiftVersion" value="5.0" />
     </platform>
     <plugin name="cordova-plugin-casai" spec="*">
         <variable name="IOS_CAS_ID" value="demo" />
     </plugin>
-
-    <preference name="android-minSdkVersion" value="23"/>
-    <preference name="android-compileSdkVersion" value="35"/>
-
 </widget>

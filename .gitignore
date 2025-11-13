@@ -25,4 +25,5 @@ Thumbs.db
 *.user
 
 .idea/
+.vscode/
 *.iml

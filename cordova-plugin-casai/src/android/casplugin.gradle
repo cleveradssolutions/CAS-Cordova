@@ -49,57 +49,14 @@ repositories {
     }  
 }
 
-def KOTLIN_VER = "2.0.21"
-gradle.beforeProject { prj ->
-    if (prj == rootProject || prj.path == ":app") {
-        prj.buildscript {
-            repositories { google(); mavenCentral() }
-            dependencies  { classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$KOTLIN_VER" }
-        }
-    }
-}
-
-
 cdvPluginPostBuildExtras.add({
-    android {
-        compileOptions {
-            sourceCompatibility JavaVersion.VERSION_17
-            targetCompatibility JavaVersion.VERSION_17
+    apply plugin: "com.cleveradssolutions.gradle-plugin"
+
+    cas {
+        // CAS Plugin hook
+        useAdvertisingId = true
+        adapters {
         }
+        // End CAS Plugin hook
     }
-
-    apply plugin: "org.jetbrains.kotlin.android"
-    dependencies {
-        implementation "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"
-    }
-
-    def kotlinExt = project.extensions.findByName("kotlin")
-    if (kotlinExt && kotlinExt.metaClass.respondsTo(kotlinExt, "jvmToolchain", Integer)) {
-        kotlinExt.jvmToolchain(17)
-    }
-    tasks.configureEach { t ->
-        if (t.hasProperty("kotlinOptions") && t.kotlinOptions?.hasProperty("jvmTarget")) {
-            t.kotlinOptions.jvmTarget = "17"
-        }
-    }
-})
-
-
-
-
-// gradle.beforeProject { prj ->
-//     prj.buildscript {
-//         repositories {
-//             google()
-//             mavenCentral()
-//             maven { url = uri("https://plugins.gradle.org/m2/") }
-//         }
-//         dependencies {
-//             classpath "com.cleveradssolutions:gradle-plugin:4.4.2"
-//         }
-//     }
-// }
-
-// cdvPluginPostBuildExtras.add({
-//     apply plugin: "com.cleveradssolutions.gradle-plugin"
-// })
+});

@@ -1,0 +1,15 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { margin: 0; background:#0B0F14; color:#E8EEF6; }
+.topbar { position: sticky; top:0; padding:12px 16px; background:#11161f; border-bottom:1px solid #1e2a3b; font-weight:700; }
+#root { max-width: 480px; margin: 18px auto; padding: 0 16px; }
+.card { background:#121821; border-radius:16px; padding:16px; box-shadow:0 8px 12px rgba(0,0,0,.25); }
+.title{ font-size:20px; font-weight:700; text-align:center; margin:0 0 8px; }
+.subtitle{ color:#A5B3C5; text-align:center; margin:0 0 16px; }
+.btn{ width:100%; padding:12px; margin:6px 0; border:0; border-radius:10px; background:#1c2736; color:#e8eef6; }
+.btn[disabled]{ opacity:.5 }
+.grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.divider{ height:1px; background:rgba(255,255,255,.06); margin:12px 0; }
+#logbox{ max-width:480px; margin:12px auto 24px; background:#0e1116; border-radius:12px; padding:8px; }
+#log{ max-height:160px; overflow:auto; font-size:12px; color:#0f0; }

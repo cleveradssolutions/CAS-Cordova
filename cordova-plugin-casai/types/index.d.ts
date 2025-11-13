@@ -2,8 +2,8 @@
 // Project: https://github.com/cleveradssolutions/CAS-Cordova
 // Definitions by: CleverAdsSolutions LTD, CAS.AI <https://cas.ai>
 
-/** 
- * Audience category used for regulatory handling and content filtering. 
+/**
+ * Audience category used for regulatory handling and content filtering.
  */
 type AdAudience =
   /**
@@ -34,7 +34,7 @@ type PrivacyGeography =
   /** Geography appears as in a region with no regulation in force. */
   | 'unregulated';
 
-/** Result of the SDK initialization attempt. */
+/** Represents the result of {@link CASMobileAds.initialize}. */
 interface InitializationStatus {
   /**
    * Initialization error or `undefined` if success.
@@ -57,9 +57,62 @@ interface InitializationStatus {
  * Although the object is in the global scope, it is not available until after the deviceready event.
  */
 interface CASMobileAds {
-  readonly Format: AdFormat;
-  readonly Size: BannerAdSize;
-  readonly Position: AdPosition;
+  /**
+   * The format of the ad
+   */
+  readonly Format: {
+    BANNER: 'Banner';
+    MREC: 'MediumRectangle';
+    APPOPEN: 'AppOpen';
+    INTERSTITIAL: 'Interstitial';
+    REWARDED: 'Rewarded';
+  };
+
+  /**
+   *  Represents the size of a banner ad.
+   */
+  readonly Size: {
+    /**
+     * Standard Banner has a fixed size of 320x50 and is the minimum ad size
+     */
+    BANNER: 'B';
+    /**
+     * Leaderboard has a fixed size of 728x90 and is allowed on tablets only.
+     */
+    LEADERBOARD: 'L';
+    /**
+     * Adaptive banner ads have a fixed aspect ratio for the maximum width.
+     * The adaptive size calculates the optimal height for that width with an aspect ratio similar to 320x50.
+     * By default, the full screen width will be used. You can limit width by specifying a `maxWidth` in the parameters.
+     */
+    ADAPTIVE: 'A';
+    /**
+     * Inline banner ads have a desired width and a maximum height, useful when you want to limit the banner's height.
+     * Inline banners are larger and taller compared to adaptive banners. They have variable height, including Medium Rectangle size,
+     * and can be as tall as the device screen. Specify the `maxWidth` and `maxHeight` dimensions to limit the ad size.
+     */
+    INLINE: 'I';
+    /**
+     * Smart selects the optimal dimensions depending on the device type.
+     * For mobile devices, it returns 320x50, while for tablets, it returns 728x90.
+     * In the UI, these banners occupy the same amount of space regardless of device type.
+     */
+    SMART: 'S';
+  };
+  /**
+   * Ad Position on screen.
+   */
+  readonly Position: {
+    TOP_CENTER: 0;
+    TOP_LEFT: 1;
+    TOP_RIGHT: 2;
+    BOTTOM_CENTER: 3;
+    BOTTOM_LEFT: 4;
+    BOTTOM_RIGHT: 5;
+    MIDDLE_CENTER: 6;
+    MIDDLE_LEFT: 7;
+    MIDDLE_RIGHT: 8;
+  };
 
   // MARK: Initialization
 
@@ -68,14 +121,6 @@ interface CASMobileAds {
    * @returns A Promise that resolves with the initialization status.
    */
   initialize(options: {
-    /**
-     * The CAS ID for Android platform.
-     */
-    casIdForAndroid: string;
-    /**
-     * The CAS ID for iOS platform.
-     */
-    casIdForIOS: string;
     /**
      * Indicates the target {@link AdAudience} of the app for regulatory and content purposes.
      * This may affect how the SDK handles data collection, personalization,
@@ -165,10 +210,8 @@ interface CASMobileAds {
 
   /**
    * Set targeting to user’s gender.
-   *
-   * Limitation: `UNKNOWN`, `MALE`, `FEMALE`.
    */
-  setUserGender(gender?: Gender): void;
+  setUserGender(gender?: undefined | 'male' | 'female'): void;
 
   /**
    * Sets a list of keywords, interests, or intents related to your application.
@@ -258,6 +301,14 @@ interface CASMobileAds {
      * Position on the screen where the banner should appear.
      */
     position: AdPosition;
+    /**
+     * Place AdView at the X offset in DP, where the origin is the selected corner (AdPosition) of the screen.
+     */
+    offsetX?: number;
+    /**
+     * Place AdView at the Y offset in DP, where the origin is the selected corner (AdPosition) of the screen.
+     */
+    offsetY?: number;
   }): void;
 
   /**
@@ -286,7 +337,7 @@ interface CASMobileAds {
      * If enabled, the ad will automatically retry loading the ad if an error occurs during the loading process.
      * @default enabled.
      */
-    autoReload: boolean;
+    autoReload?: boolean;
     /**
      * Sets the refresh interval in seconds for displaying ads.
      * The countdown runs only while the view is visible.
@@ -294,7 +345,7 @@ interface CASMobileAds {
      * Set `0` to disable. Works regardless of `autoReload`.
      * @default 30 seconds
      */
-    refreshInterval: number;
+    refreshInterval?: number;
   }): Promise<void>;
 
   /**
@@ -306,7 +357,15 @@ interface CASMobileAds {
     /**
      * Position on the screen where the banner should appear.
      */
-    position: AdPosition;
+    position?: AdPosition;
+    /**
+     * Place AdView at the X offset in DP, where the origin is the selected corner (AdPosition) of the screen.
+     */
+    offsetX?: number;
+    /**
+     * Place AdView at the Y offset in DP, where the origin is the selected corner (AdPosition) of the screen.
+     */
+    offsetY?: number;
   }): void;
 
   /**
@@ -445,7 +504,7 @@ interface CASMobileAds {
    *
    * @returns A Promise that resolves after the ad is dismissed, or rejects with an error if the ad fails to show.
    */
-  showRewardedAd(): Promise<void>;
+  showRewardedAd(): Promise<RewardedAdInfo>;
 
   /**
    * Destroys the currently loaded Rewarded ad and frees up resources.
@@ -457,51 +516,12 @@ interface CASMobileAds {
 /**
  *  Represents the size of a banner ad.
  */
-declare enum BannerAdSize {
-  /**
-   * Standard Banner has a fixed size of 320x50 and is the minimum ad size
-   */
-  BANNER = 'B',
-  /**
-   * Leaderboard has a fixed size of 728x90 and is allowed on tablets only.
-   */
-  LEADERBOARD = 'L',
-  /**
-   * Adaptive banner ads have a fixed aspect ratio for the maximum width.
-   * The adaptive size calculates the optimal height for that width with an aspect ratio similar to 320x50.
-   * By default, the full screen width will be used. You can limit width by specifying a `maxWidth` in the parameters.
-   */
-  ADAPTIVE = 'A',
-  /**
-   * Inline banner ads have a desired width and a maximum height, useful when you want to limit the banner's height.
-   * Inline banners are larger and taller compared to adaptive banners. They have variable height, including Medium Rectangle size,
-   * and can be as tall as the device screen. Specify the `maxWidth` and `maxHeight` dimensions to limit the ad size.
-   */
-  INLINE = 'I',
-  /**
-   * Smart selects the optimal dimensions depending on the device type.
-   * For mobile devices, it returns 320x50, while for tablets, it returns 728x90.
-   * In the UI, these banners occupy the same amount of space regardless of device type.
-   */
-  SMART = 'S',
-}
+type BannerAdSize = (typeof casai.Size)[keyof typeof casai.Size];
 
 /**
  * Ad Position on screen.
  */
-declare enum AdPosition {
-  TOP_CENTER = 0,
-  TOP_LEFT = 1,
-  TOP_RIGHT = 2,
-  BOTTOM_CENTER = 3,
-  BOTTOM_LEFT = 4,
-  BOTTOM_RIGHT = 5,
-  MIDDLE_CENTER = 6,
-  MIDDLE_LEFT = 7,
-  MIDDLE_RIGHT = 8,
-}
-
-type Gender = undefined | 'male' | 'female';
+type AdPosition = (typeof casai.Position)[keyof typeof casai.Position];
 
 type ConsentFlowStatus =
   /** There was no attempt to show the consent flow. */
@@ -526,19 +546,23 @@ type ConsentFlowStatus =
 /**
  * The format of the ad
  */
-declare enum AdFormat {
-  BANNER = 'Banner',
-  MREC = 'MediumRectangle',
-  APPOPEN = 'AppOpen',
-  INTERSTITIAL = 'Interstitial',
-  REWARDED = 'Rewarded',
-}
+type AdFormat = (typeof casai.Format)[keyof typeof casai.Format];
 
 interface AdInfo {
   /**
    * The format of the ad that is shown.
    */
   format: AdFormat;
+}
+
+/**
+ * Represents the result of {@link CASMobileAds.showRewardedAd}.
+ */
+interface RewardedAdInfo {
+  /**
+   * Indicates whether the user has earned a reward from the ad.
+   */
+  isUserEarnReward: boolean;
 }
 
 interface AdContentInfo {
@@ -586,24 +610,90 @@ interface AdError {
    * The format of the ad that is shown.
    */
   format: AdFormat;
-  /** 
-   * Numeric error code returned by the SDK. 
+  /**
+   * Numeric error code returned by the SDK.
    */
   code: number;
-  /** 
-   * Human-readable error message. 
+  /**
+   * Human-readable error message.
    */
   message: string;
 }
 
 interface Document {
+  /**
+   * Called when the ad content has been successfully loaded.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_loaded', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content fails to load.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   *  console.log("Error: " + ev.detail.message)
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_load_failed', listener: (ev: CustomEvent<AdError>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content fails to show.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   *  console.log("Error: " + ev.detail.message)
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_show_failed', listener: (ev: CustomEvent<AdError>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content is successfully shown.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_showed', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when an ad impression occurs.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_impressions', listener: (ev: CustomEvent<AdContentInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content is clicked by the user
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_clicked', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when the ad content is dismissed.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_dismissed', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
+  /**
+   * Called when a user earns a reward from the ad.
+   * To check the ad format:
+   * ```
+   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * }
+   * ```
+   */
   addEventListener(type: 'casai_ad_reward', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
 
   removeEventListener(type: 'casai_ad_loaded', listener: (ev: CustomEvent<AdInfo>) => any, useCapture?: boolean): void;
