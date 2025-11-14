@@ -31,8 +31,8 @@ class CASMobileAds : CordovaPlugin() {
 
     private var casId: String = ""
 
-    private lateinit var bannerController: BannerController
-    private lateinit var mrecController: BannerController
+    private val bannerController = BannerController(this, AdFormat.BANNER)
+    private val mrecController = BannerController(this, AdFormat.MEDIUM_RECTANGLE)
 
     private var interstitialAd: CASInterstitial? = null
     private var rewardedAd: CASRewarded? = null
@@ -195,13 +195,6 @@ class CASMobileAds : CordovaPlugin() {
         }
         managerBuilder.build(activity)
 
-        if (!::bannerController.isInitialized) {
-            bannerController = BannerController(this, AdFormat.BANNER)
-        }
-        if (!::mrecController.isInitialized) {
-            mrecController = BannerController(this, AdFormat.MEDIUM_RECTANGLE)
-        }
-
         if (interstitialAd == null) {
             interstitialAd = CASInterstitial(activity.applicationContext, casId).also { ad ->
                 interstitialCallback = ScreenContentCallback(this, AdFormat.INTERSTITIAL).also { callback ->
@@ -212,7 +205,7 @@ class CASMobileAds : CordovaPlugin() {
         }
         if (rewardedAd == null) {
             rewardedAd = CASRewarded(activity.applicationContext, casId).also { ad ->
-                rewardedCallback = ScreenContentCallback(this, AdFormat.REWARDED, resolveOnReward = true).also { callback ->
+                rewardedCallback = ScreenContentCallback(this, AdFormat.REWARDED).also { callback ->
                     ad.contentCallback = callback
                     ad.onImpressionListener = callback
                 }
@@ -304,7 +297,7 @@ class CASMobileAds : CordovaPlugin() {
         val autoShow = args.optBoolean(1, false)
 
         val ad = appOpenAd ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
-        val callback = appOpenCallback ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
+        val callback = appOpenCallback!!
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload
@@ -315,7 +308,7 @@ class CASMobileAds : CordovaPlugin() {
 
     private fun showAppOpenAd(callbackContext: CallbackContext) {
         val ad = appOpenAd ?: return callbackContext.error(AdError.NOT_READY.message)
-        val callback = appOpenCallback ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
+        val callback = appOpenCallback!!
         callback.pendingShowPromise = callbackContext
         ad.show(activity)
     }
@@ -326,7 +319,7 @@ class CASMobileAds : CordovaPlugin() {
         val minIntervalSec = args.optInt(2, 0)
 
         val ad = interstitialAd ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
-        val callback = interstitialCallback ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
+        val callback = interstitialCallback!!
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload
@@ -338,7 +331,7 @@ class CASMobileAds : CordovaPlugin() {
 
     private fun showInterstitialAd(callbackContext: CallbackContext) {
         val ad = interstitialAd ?: return callbackContext.error(AdError.NOT_READY.message)
-        val callback = interstitialCallback ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
+        val callback = interstitialCallback!!
         callback.pendingShowPromise = callbackContext
         ad.show(activity)
     }
@@ -347,7 +340,7 @@ class CASMobileAds : CordovaPlugin() {
         val autoload = args.optBoolean(0, false)
 
         val ad = rewardedAd ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
-        val callback = rewardedCallback ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
+        val callback = rewardedCallback!!
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload
@@ -356,12 +349,12 @@ class CASMobileAds : CordovaPlugin() {
 
     private fun showRewardedAd(callbackContext: CallbackContext) {
         val ad = rewardedAd ?: return callbackContext.error(errorJson(AdFormat.REWARDED, AdError.NOT_READY).toString())
-        val callback = rewardedCallback ?: return callbackContext.error(errorJson(AdFormat.REWARDED, AdError.NOT_INITIALIZED).toString())
+        val cb = rewardedCallback!!
 
-        callback.pendingShowPromise = callbackContext
-        val listener = ad.contentCallback as OnRewardEarnedListener
-        ad.show(activity, listener)
+        cb.pendingShowPromise = callbackContext
+        ad.show(activity, cb)
     }
+
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)

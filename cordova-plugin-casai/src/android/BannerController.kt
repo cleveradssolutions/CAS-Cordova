@@ -32,11 +32,6 @@ internal object BannerPosition {
     const val MIDDLE_RIGHT = 8
 }
 
-private data class BannerRequest(
-    var sizeCode: String = "A",
-    var maxWdp: Int = 0,
-    var maxHdp: Int = 0
-)
 
 class BannerController(
     private val plugin: CASMobileAds,
@@ -45,18 +40,19 @@ class BannerController(
 
     private var bannerView: CASBannerView? = null
 
-    private var attachedToWindow = false
     private val isVisible = AtomicBoolean(false)
     private var desiredPosition: Int = BannerPosition.BOTTOM_CENTER
     private var offsetXdp: Int = 0
     private var offsetYdp: Int = 0
     private var pendingLoadPromise: CallbackContext? = null
-    private val request = BannerRequest()
+    private var sizeCode: String = "A"
+    private var maxWdp: Int = 0
+    private var maxHdp: Int = 0
 
     fun setRequest(sizeCode: String, maxWdp: Int, maxHdp: Int) {
-        request.sizeCode = sizeCode
-        request.maxWdp = maxWdp
-        request.maxHdp = maxHdp
+        this.sizeCode = sizeCode
+        this.maxWdp = maxWdp
+        this.maxHdp = maxHdp
     }
 
     fun loadBanner(
@@ -68,32 +64,36 @@ class BannerController(
     ) {
         pendingLoadPromise = promise
 
-        val view = CASBannerView(plugin.activity).apply {
+        val view = bannerView ?: CASBannerView(plugin.activity).apply {
             adListener = this@BannerController
             onImpressionListener = this@BannerController
             visibility = View.GONE
-            this.casId = casId
-            isAutoloadEnabled = autoload
-            refreshInterval = refreshSeconds
-            size = when (request.sizeCode) {
-                "A", "I", "S" -> resolveAdSize()
-                else -> adSize
-            }
+            bannerView = this
         }
-        bannerView = view
+
+        val resolvedSize = when (sizeCode) {
+            "A" -> resolveAdSize()
+            "I" -> resolveAdSize()
+            else -> adSize
+        }
 
         CASHandler.main {
-            val layoutParams = buildLayoutParamsForCurrentState(view)
-            if (!attachedToWindow) {
-                plugin.activity.addContentView(view, layoutParams)
-                attachedToWindow = true
-            } else {
-                view.layoutParams = layoutParams
-            }
-            view.visibility = if (isVisible.get()) View.VISIBLE else View.GONE
-        }
+            view.casId = casId
+            view.isAutoloadEnabled = autoload
+            view.refreshInterval = refreshSeconds
+            view.size = resolvedSize
 
-        if (!autoload) view.load()
+            val lp = buildLayoutParamsForCurrentState(view)
+            if (view.parent == null) {
+                plugin.activity.addContentView(view, lp)
+            } else {
+                view.layoutParams = lp
+            }
+
+            if (view.visibility != View.VISIBLE) view.visibility = View.GONE
+
+            if (!autoload) view.load()
+        }
     }
 
     fun show(position: Int, offsetXdp: Int, offsetYdp: Int) {
@@ -117,11 +117,8 @@ class BannerController(
     fun destroy() {
         val view = bannerView ?: return
         CASHandler.main {
-            (view.parent as? ViewGroup)?.removeView(view)
-            view.visibility = View.GONE
             view.destroy()
         }
-        attachedToWindow = false
         bannerView = null
         isVisible.set(false)
         pendingLoadPromise = null
@@ -137,9 +134,9 @@ class BannerController(
     }
 
     override fun onAdViewFailed(view: CASBannerView, error: AdError) {
-        val error = plugin.errorJson(adFormat, error)
-        plugin.emitEvent(PluginEvents.LOAD_FAILED, error)
-        pendingLoadPromise?.error(error.toString())
+        val payload = plugin.errorJson(adFormat, error)
+        plugin.emitEvent(PluginEvents.LOAD_FAILED, payload)
+        pendingLoadPromise?.error(payload.toString())
         pendingLoadPromise = null
     }
 
@@ -154,14 +151,12 @@ class BannerController(
     fun onConfigurationChanged() {
         val view = bannerView ?: return
         view.post {
-            if (request.sizeCode == "A" || request.sizeCode == "I" || request.sizeCode == "S") {
+            if (sizeCode == "A" || sizeCode == "I") {
                 view.size = resolveAdSize()
             }
-            view.layoutParams = buildLayoutParamsForCurrentState(view)
-            view.requestLayout()
-            if (isVisible.get()) view.visibility = View.VISIBLE
         }
     }
+
 
     private fun resolveAdSize(): AdSize {
         val dm = plugin.activity.resources.displayMetrics
@@ -173,10 +168,10 @@ class BannerController(
         val screenWdp = pxToDp(widthPx.toFloat(), dm).toInt()
         val screenHdp = pxToDp(heightPx.toFloat(), dm).toInt()
 
-        val w = if (request.maxWdp > 0) request.maxWdp.coerceAtMost(screenWdp) else screenWdp
-        val h = if (request.maxHdp > 0) request.maxHdp.coerceAtMost(screenHdp) else screenHdp
+        val w = if (maxWdp > 0) maxWdp.coerceAtMost(screenWdp) else screenWdp
+        val h = if (maxHdp > 0) maxHdp.coerceAtMost(screenHdp) else screenHdp
 
-        return when (request.sizeCode) {
+        return when (sizeCode) {
             "S" -> AdSize.getSmartBanner(plugin.activity)
             "A" -> AdSize.getAdaptiveBanner(plugin.activity, w)
             "I" -> AdSize.getInlineBanner(w, h)
