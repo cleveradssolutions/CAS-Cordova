@@ -59,7 +59,6 @@
     document.getElementById("btnInit").onclick = async () => {
         try {
             const status = await casai.initialize({
-            casIdForAndroid: "demo",
             targetAudience: "notchildren",
             showConsentFormIfRequired: true,
             forceTestAds: true,

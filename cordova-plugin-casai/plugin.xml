@@ -55,7 +55,6 @@
 
         <source-file src="src/android/CASMobileAds.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <source-file src="src/android/ScreenContentCallback.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
-        <source-file src="src/android/AdJson.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <source-file src="src/android/PluginEvents.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <source-file src="src/android/BannerController.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <framework src="com.cleveradssolutions:cas-sdk:4.4.2" />
