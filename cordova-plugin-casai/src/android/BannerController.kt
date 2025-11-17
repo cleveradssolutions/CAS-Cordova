@@ -1,5 +1,6 @@
 package com.cleveradssolutions.plugin.cordova
 
+import android.graphics.Color
 import android.os.Build
 import android.util.DisplayMetrics
 import android.view.DisplayCutout
@@ -53,6 +54,23 @@ class BannerController(
     private var maxWdp: Int = 0
     private var maxHdp: Int = 0
 
+    private val showTask: () -> Unit = {
+        bannerView?.let {
+            it.layoutParams = buildLayoutParamsForCurrentState(it)
+            it.visibility = View.VISIBLE
+        }
+    }
+
+    private val hideTask: () -> Unit = {
+        bannerView?.visibility = View.GONE
+    }
+
+    private fun rejectPendingLoadIfAny(reason: String) {
+        pendingLoadPromise?.let { old ->
+            old.error(plugin.cancelledLoadError(adFormat, reason).toString())
+            pendingLoadPromise = null
+        }
+    }
 
     fun loadBanner(
         sizeCode: String,
@@ -64,6 +82,8 @@ class BannerController(
         refreshSeconds: Int,
         promise: CallbackContext
     ) {
+        rejectPendingLoadIfAny("Load superseded: new parameters applied")
+
         pendingLoadPromise = promise
         this.sizeCode = sizeCode
         this.maxWdp = maxWdp
@@ -76,11 +96,12 @@ class BannerController(
         }
 
         CASHandler.main {
-            view.visibility = View.GONE
             view.casId = casId
             view.isAutoloadEnabled = autoload
             view.refreshInterval = refreshSeconds
             view.size = adSize
+            view.setBackgroundColor(Color.TRANSPARENT);
+            view.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
 
             val layoutParams = buildLayoutParamsForCurrentState(view)
             if (view.parent == null) {
@@ -88,6 +109,8 @@ class BannerController(
             } else {
                 view.layoutParams = layoutParams
             }
+
+            view.visibility = if (isVisible.get()) View.VISIBLE else View.GONE
         }
     }
 
@@ -97,17 +120,12 @@ class BannerController(
         this.offsetXdp = offsetXdp
         this.offsetYdp = offsetYdp
         isVisible.set(true)
-
-        val view = bannerView ?: return
-        CASHandler.main {
-            view.layoutParams = buildLayoutParamsForCurrentState(view)
-            view.visibility = View.VISIBLE
-        }
+        CASHandler.main(showTask)
     }
 
     fun hide() {
         isVisible.set(false)
-        bannerView?.let { bannerView -> CASHandler.main { bannerView.visibility = View.GONE } }
+        CASHandler.main(hideTask)
     }
 
     fun destroy() {
@@ -123,7 +141,6 @@ class BannerController(
 
     override fun onAdViewLoaded(view: CASBannerView) {
         view.layoutParams = buildLayoutParamsForCurrentState(view)
-        view.visibility = if (isVisible.get()) View.VISIBLE else View.GONE
 
         plugin.emitEvent(PluginEvents.LOADED, plugin.adInfoJson(adFormat))
         pendingLoadPromise?.success()
@@ -155,7 +172,6 @@ class BannerController(
             }
         }
     }
-
 
     fun resolveAdSize(sizeCode: String, maxWdp: Int, maxHdp: Int): AdSize {
         val (screenWdp, screenHdp) = getScreenDp()
@@ -198,7 +214,6 @@ class BannerController(
         val hDp = pxToDp(heightPx.toFloat(), displayMetrics).toInt()
         return wDp to hDp
     }
-
 
     @MainThread
     private fun buildLayoutParamsForCurrentState(view: CASBannerView): FrameLayout.LayoutParams {

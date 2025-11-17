@@ -83,5 +83,11 @@ internal class ScreenContentCallback(
         hasEarnedReward = true
         plugin.emitEvent(PluginEvents.REWARD, plugin.adContentToJson(adFormat, ad))
     }
+
+    fun setPendingLoadPromiseReplacing(newCb: CallbackContext, reason: String) {
+        pendingLoadPromise?.error(plugin.cancelledLoadError(adFormat, reason).toString())
+        pendingLoadPromise = newCb
+    }
+
 }
 
