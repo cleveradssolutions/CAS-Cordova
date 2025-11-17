@@ -4,10 +4,10 @@ import android.app.Activity
 import android.content.res.Configuration
 import com.cleveradssolutions.sdk.AdContentInfo
 import com.cleveradssolutions.sdk.AdFormat
+import com.cleveradssolutions.sdk.AdRevenuePrecision
 import com.cleveradssolutions.sdk.screen.CASAppOpen
 import com.cleveradssolutions.sdk.screen.CASInterstitial
 import com.cleveradssolutions.sdk.screen.CASRewarded
-import com.cleveradssolutions.sdk.screen.OnRewardEarnedListener
 import com.cleversolutions.ads.AdError
 import com.cleversolutions.ads.AdSize
 import com.cleversolutions.ads.Audience
@@ -43,6 +43,7 @@ class CASMobileAds : CordovaPlugin() {
     private var appOpenCallback: ScreenContentCallback? = null
 
     private var pendingInitCallback: CallbackContext? = null
+    private var initResult: JSONObject? = null
 
     fun adInfoJson(format: AdFormat): JSONObject =
         JSONObject().put("format", format.label)
@@ -53,16 +54,25 @@ class CASMobileAds : CordovaPlugin() {
             .put("code", error.code)
             .put("message", error.message)
 
-    fun adContentToJson(format: AdFormat, info: AdContentInfo): JSONObject =
-        JSONObject()
+    fun adContentToJson(format: AdFormat, info: AdContentInfo): JSONObject {
+        val precision = when (info.revenuePrecision) {
+            AdRevenuePrecision.PRECISE -> "precise"
+            AdRevenuePrecision.FLOOR -> "floor"
+            AdRevenuePrecision.ESTIMATED -> "estimated"
+            else -> "unknown"
+        }
+
+        return JSONObject()
             .put("format", format.label)
             .put("sourceUnitId", info.sourceUnitId)
             .put("sourceName", info.sourceName)
             .put("creativeId", info.creativeId ?: JSONObject.NULL)
             .put("revenue", info.revenue)
-            .put("revenuePrecision", info.revenuePrecision)
+            .put("revenuePrecision", precision)
             .put("revenueTotal", info.revenueTotal)
             .put("impressionDepth", info.impressionDepth)
+    }
+
 
     override fun execute(action: String, data: JSONArray, callbackContext: CallbackContext): Boolean {
         when (action) {
@@ -146,23 +156,29 @@ class CASMobileAds : CordovaPlugin() {
     }
 
     private fun initialize(args: JSONArray, callbackContext: CallbackContext) {
+        initResult?.let {
+            callbackContext.success(it)
+            return
+        }
+
         casId = activity.applicationContext.packageName
 
         val cordovaVersion = args.optString(0, "")
-        val targetAudience = args.optString(1, null)
+        val targetAudience = args.optString(1, null)?.takeIf { it.isNotBlank() }
         val showConsentFormIfRequired = args.optBoolean(2, true)
         val forceTestAds = args.optBoolean(3, false)
         val testDeviceIds = args.optJSONArray(4) ?: JSONArray()
         val debugGeography = args.optString(5, "unknown")
         val mediationExtras = args.optJSONObject(6) ?: JSONObject()
 
-        CAS.settings.debugMode = forceTestAds
         CAS.settings.testDeviceIDs = (0 until testDeviceIds.length()).map { testDeviceIds.optString(it) }.toSet()
 
-        CAS.settings.taggedAudience = when (targetAudience) {
-            "children" -> Audience.CHILDREN
-            "notchildren" -> Audience.NOT_CHILDREN
-            else -> Audience.UNDEFINED
+        if (targetAudience != null) {
+            CAS.settings.taggedAudience = when (targetAudience) {
+                "children" -> Audience.CHILDREN
+                "notchildren" -> Audience.NOT_CHILDREN
+                else -> Audience.UNDEFINED
+            }
         }
 
         pendingInitCallback = callbackContext
@@ -178,16 +194,17 @@ class CASMobileAds : CordovaPlugin() {
                     .withForceTesting(forceTestAds)
             )
             .withCompletionListener { configuration ->
-                val once = pendingInitCallback ?: return@withCompletionListener
-                pendingInitCallback = null
-
-                val result = JSONObject().apply {
+                initResult = JSONObject().apply {
                     configuration.error?.let { put("error", it) }
                     configuration.countryCode?.let { put("countryCode", it) }
                     put("isConsentRequired", configuration.isConsentRequired)
                     put("consentFlowStatus", consentStatusText(configuration.consentFlowStatus))
                 }
-                once.success(result)
+
+                pendingInitCallback?.let { cb ->
+                    pendingInitCallback = null
+                    cb.success(initResult)
+                }
             }
 
         mediationExtras.keys().forEach { key ->
@@ -244,17 +261,13 @@ class CASMobileAds : CordovaPlugin() {
         val autoload = args.optBoolean(3, true)
         val refreshSeconds = args.optInt(4, 30)
 
-        bannerController.setRequest(sizeCode, maxWidthDp, maxHeightDp)
-
-        val fixedAdSize = when (sizeCode) {
-            "B" -> AdSize.BANNER
-            "L" -> AdSize.LEADERBOARD
-            else -> AdSize.BANNER
-        }
-
+        val adSize = bannerController.resolveAdSize(sizeCode, maxWidthDp, maxHeightDp)
         bannerController.loadBanner(
+            sizeCode = sizeCode,
             casId = casId,
-            adSize = fixedAdSize,
+            adSize = adSize,
+            maxWdp = maxWidthDp,
+            maxHdp = maxHeightDp,
             autoload = autoload,
             refreshSeconds = refreshSeconds,
             promise = callbackContext
@@ -269,20 +282,24 @@ class CASMobileAds : CordovaPlugin() {
         callbackContext.success()
     }
 
-    private fun loadMRecAd(args: JSONArray, callbackContext: CallbackContext) {
+    private fun loadMRecAd(args: JSONArray, cb: CallbackContext) {
         val autoload = args.optBoolean(0, true)
-        val refreshSeconds = args.optInt(1, 30)
-
-        mrecController.setRequest("M", 0, 0)
+        val refresh  = args.optInt(1, 30)
+        val sizeCode = "M"
+        val adSize = bannerController.resolveAdSize(sizeCode, 0, 0)
 
         mrecController.loadBanner(
+            sizeCode = sizeCode,
             casId = casId,
-            adSize = AdSize.MEDIUM_RECTANGLE,
+            adSize = adSize,
+            maxWdp = 0,
+            maxHdp = 0,
             autoload = autoload,
-            refreshSeconds = refreshSeconds,
-            promise = callbackContext
+            refreshSeconds = refresh,
+            promise = cb
         )
     }
+
 
     private fun showMrecAd(args: JSONArray, callbackContext: CallbackContext) {
         val position = args.optInt(0, BannerPosition.MIDDLE_CENTER)
@@ -296,19 +313,18 @@ class CASMobileAds : CordovaPlugin() {
         val autoload = args.optBoolean(0, false)
         val autoShow = args.optBoolean(1, false)
 
-        val ad = appOpenAd ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
+        val ad = appOpenAd ?: return callbackContext.error(errorJson(AdFormat.APP_OPEN, AdError.NOT_INITIALIZED))
         val callback = appOpenCallback!!
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload
         ad.isAutoshowEnabled = autoShow
-
-        if (!autoload) ad.load(activity.applicationContext)
     }
 
     private fun showAppOpenAd(callbackContext: CallbackContext) {
-        val ad = appOpenAd ?: return callbackContext.error(AdError.NOT_READY.message)
+        val ad = appOpenAd ?: return callbackContext.error(errorJson(AdFormat.APP_OPEN, AdError.NOT_READY))
         val callback = appOpenCallback!!
+
         callback.pendingShowPromise = callbackContext
         ad.show(activity)
     }
@@ -318,19 +334,18 @@ class CASMobileAds : CordovaPlugin() {
         val autoShow = args.optBoolean(1, false)
         val minIntervalSec = args.optInt(2, 0)
 
-        val ad = interstitialAd ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
+        val ad = interstitialAd ?: return callbackContext.error(errorJson(AdFormat.INTERSTITIAL, AdError.NOT_INITIALIZED))
         val callback = interstitialCallback!!
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload
+        ad.isAutoshowEnabled = autoShow
         ad.minInterval = minIntervalSec
 
-        if (!autoload) ad.load(activity.applicationContext)
-        if (autoShow) ad.show(activity)
     }
 
     private fun showInterstitialAd(callbackContext: CallbackContext) {
-        val ad = interstitialAd ?: return callbackContext.error(AdError.NOT_READY.message)
+        val ad = interstitialAd ?: return callbackContext.error(errorJson(AdFormat.INTERSTITIAL, AdError.NOT_READY))
         val callback = interstitialCallback!!
         callback.pendingShowPromise = callbackContext
         ad.show(activity)
@@ -339,20 +354,20 @@ class CASMobileAds : CordovaPlugin() {
     private fun loadRewardedAd(args: JSONArray, callbackContext: CallbackContext) {
         val autoload = args.optBoolean(0, false)
 
-        val ad = rewardedAd ?: return callbackContext.error(AdError.NOT_INITIALIZED.message)
+        val ad = rewardedAd ?: return callbackContext.error(errorJson(AdFormat.REWARDED, AdError.NOT_INITIALIZED))
         val callback = rewardedCallback!!
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload
-        if (!autoload) ad.load(activity.applicationContext)
+
     }
 
     private fun showRewardedAd(callbackContext: CallbackContext) {
-        val ad = rewardedAd ?: return callbackContext.error(errorJson(AdFormat.REWARDED, AdError.NOT_READY).toString())
-        val cb = rewardedCallback!!
+        val ad = rewardedAd ?: return callbackContext.error(errorJson(AdFormat.REWARDED, AdError.NOT_READY))
+        val callback = rewardedCallback!!
 
-        cb.pendingShowPromise = callbackContext
-        ad.show(activity, cb)
+        callback.pendingShowPromise = callbackContext
+        ad.show(activity, callback)
     }
 
 

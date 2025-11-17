@@ -1,10 +1,13 @@
 package com.cleveradssolutions.plugin.cordova
 
 import android.os.Build
+import android.util.DisplayMetrics
 import android.view.DisplayCutout
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
+import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.annotation.MainThread
 import androidx.core.util.TypedValueCompat.pxToDp
@@ -45,56 +48,49 @@ class BannerController(
     private var offsetXdp: Int = 0
     private var offsetYdp: Int = 0
     private var pendingLoadPromise: CallbackContext? = null
-    private var sizeCode: String = "A"
+
+    private var sizeCode: String? = null
     private var maxWdp: Int = 0
     private var maxHdp: Int = 0
 
-    fun setRequest(sizeCode: String, maxWdp: Int, maxHdp: Int) {
-        this.sizeCode = sizeCode
-        this.maxWdp = maxWdp
-        this.maxHdp = maxHdp
-    }
 
     fun loadBanner(
+        sizeCode: String,
         casId: String,
         adSize: AdSize,
+        maxWdp: Int,
+        maxHdp: Int,
         autoload: Boolean,
         refreshSeconds: Int,
         promise: CallbackContext
     ) {
         pendingLoadPromise = promise
+        this.sizeCode = sizeCode
+        this.maxWdp = maxWdp
+        this.maxHdp = maxHdp
 
         val view = bannerView ?: CASBannerView(plugin.activity).apply {
             adListener = this@BannerController
             onImpressionListener = this@BannerController
-            visibility = View.GONE
             bannerView = this
         }
 
-        val resolvedSize = when (sizeCode) {
-            "A" -> resolveAdSize()
-            "I" -> resolveAdSize()
-            else -> adSize
-        }
-
         CASHandler.main {
+            view.visibility = View.GONE
             view.casId = casId
             view.isAutoloadEnabled = autoload
             view.refreshInterval = refreshSeconds
-            view.size = resolvedSize
+            view.size = adSize
 
-            val lp = buildLayoutParamsForCurrentState(view)
+            val layoutParams = buildLayoutParamsForCurrentState(view)
             if (view.parent == null) {
-                plugin.activity.addContentView(view, lp)
+                plugin.activity.addContentView(view, layoutParams)
             } else {
-                view.layoutParams = lp
+                view.layoutParams = layoutParams
             }
-
-            if (view.visibility != View.VISIBLE) view.visibility = View.GONE
-
-            if (!autoload) view.load()
         }
     }
+
 
     fun show(position: Int, offsetXdp: Int, offsetYdp: Int) {
         desiredPosition = position
@@ -111,13 +107,14 @@ class BannerController(
 
     fun hide() {
         isVisible.set(false)
-        bannerView?.let { v -> CASHandler.main { v.visibility = View.GONE } }
+        bannerView?.let { bannerView -> CASHandler.main { bannerView.visibility = View.GONE } }
     }
 
     fun destroy() {
         val view = bannerView ?: return
         CASHandler.main {
             view.destroy()
+            (view.parent as? ViewGroup)?.removeView(view)
         }
         bannerView = null
         isVisible.set(false)
@@ -149,35 +146,59 @@ class BannerController(
     }
 
     fun onConfigurationChanged() {
-        val view = bannerView ?: return
-        view.post {
-            if (sizeCode == "A" || sizeCode == "I") {
-                view.size = resolveAdSize()
+        val bannerView = this@BannerController.bannerView ?: return
+        val code = sizeCode ?: return
+        if (code == "A" || code == "I") {
+            val newSize = resolveAdSize(code, maxWdp, maxHdp)
+            CASHandler.main {
+                bannerView.size = newSize
             }
         }
     }
 
 
-    private fun resolveAdSize(): AdSize {
-        val dm = plugin.activity.resources.displayMetrics
-
-        val root = plugin.activity.findViewById<View>(android.R.id.content)
-        val widthPx = (root.width.takeIf { it > 0 } ?: dm.widthPixels)
-        val heightPx = (root.height.takeIf { it > 0 } ?: dm.heightPixels)
-
-        val screenWdp = pxToDp(widthPx.toFloat(), dm).toInt()
-        val screenHdp = pxToDp(heightPx.toFloat(), dm).toInt()
-
+    fun resolveAdSize(sizeCode: String, maxWdp: Int, maxHdp: Int): AdSize {
+        val (screenWdp, screenHdp) = getScreenDp()
         val w = if (maxWdp > 0) maxWdp.coerceAtMost(screenWdp) else screenWdp
         val h = if (maxHdp > 0) maxHdp.coerceAtMost(screenHdp) else screenHdp
 
         return when (sizeCode) {
+            "B" -> AdSize.BANNER
+            "L" -> AdSize.LEADERBOARD
+            "M" -> AdSize.MEDIUM_RECTANGLE
             "S" -> AdSize.getSmartBanner(plugin.activity)
             "A" -> AdSize.getAdaptiveBanner(plugin.activity, w)
             "I" -> AdSize.getInlineBanner(w, h)
             else -> AdSize.BANNER
         }
     }
+
+    private fun getScreenDp(): Pair<Int, Int> {
+        val windowManager = plugin.activity.getSystemService(WindowManager::class.java)
+        val displayMetrics = plugin.activity.resources.displayMetrics
+
+        val widthPx: Int
+        val heightPx: Int
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val metrics = windowManager.currentWindowMetrics
+            val bounds = metrics.bounds
+            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            widthPx  = bounds.width()  - insets.left - insets.right
+            heightPx = bounds.height() - insets.top  - insets.bottom
+        } else {
+            val display = plugin.activity.windowManager.defaultDisplay
+            val tmp = DisplayMetrics()
+            display.getMetrics(tmp)
+            widthPx = tmp.widthPixels
+            heightPx = tmp.heightPixels
+        }
+
+        val wDp = pxToDp(widthPx.toFloat(), displayMetrics).toInt()
+        val hDp = pxToDp(heightPx.toFloat(), displayMetrics).toInt()
+        return wDp to hDp
+    }
+
 
     @MainThread
     private fun buildLayoutParamsForCurrentState(view: CASBannerView): FrameLayout.LayoutParams {
