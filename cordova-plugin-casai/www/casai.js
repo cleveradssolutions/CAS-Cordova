@@ -26,101 +26,6 @@ const nativePromise = function nativePromise(name, params) {
   });
 };
 
-var bannerAd = {
-  load: function ({ adSize, maxWidth, maxHeight, autoReload, refreshInterval }) {
-    return nativePromise('loadBannerAd', [
-      adSize ?? 'S',
-      maxWidth,
-      maxHeight,
-      autoReload ?? true,
-      refreshInterval ?? 30,
-    ]);
-  },
-
-  show: function ({ position, offsetX, offsetY }) {
-    nativeCall('showBannerAd', [position, offsetX ?? 0, offsetY ?? 0]);
-  },
-
-  hide: function () {
-    nativeCall('hideBannerAd', []);
-  },
-
-  destroy: function () {
-    nativeCall('destroyBannerAd', []);
-  },
-};
-var mrecAd = {
-  load: function ({ autoReload, refreshInterval }) {
-    return nativePromise('loadMRecAd', [autoReload ?? true, refreshInterval ?? 30]);
-  },
-
-  show: function ({ position, offsetX, offsetY }) {
-    nativeCall('showMRecAd', [position, offsetX ?? 0, offsetY ?? 0]);
-  },
-
-  hide: function () {
-    nativeCall('hideMRecAd', []);
-  },
-
-  destroy: function () {
-    nativeCall('destroyMRecAd', []);
-  },
-};
-
-var appOpenAd = {
-  load: function ({ autoReload, autoShow }) {
-    return nativePromise('loadAppOpenAd', [autoReload ?? false, autoShow ?? false]);
-  },
-
-  isLoaded: function () {
-    return nativePromise('isAppOpenAdLoaded', []);
-  },
-
-  show: function () {
-    return nativePromise('showAppOpenAd', []);
-  },
-
-  destroy: function () {
-    nativeCall('destroyAppOpenAd', []);
-  },
-};
-
-var interstitialAd = {
-  load: function ({ autoReload, autoShow, minInterval }) {
-    return nativePromise('loadInterstitialAd', [autoReload ?? false, autoShow ?? false, minInterval ?? 0]);
-  },
-
-  isLoaded: function () {
-    return nativePromise('isInterstitialAdLoaded', []);
-  },
-
-  show: function () {
-    return nativePromise('showInterstitialAd', []);
-  },
-
-  destroy: function () {
-    nativeCall('destroyInterstitialAd', []);
-  },
-};
-
-var rewardedAd = {
-  load: function ({ autoReload }) {
-    return nativePromise('loadRewardedAd', [autoReload ?? false]);
-  },
-
-  isLoaded: function () {
-    return nativePromise('isRewardedAdLoaded', []);
-  },
-
-  show: function () {
-    return nativePromise('showRewardedAd', []);
-  },
-
-  destroy: function () {
-    nativeCall('destroyRewardedAd', []);
-  },
-};
-
 var casai = {
   Format: {
     BANNER: 'Banner',
@@ -148,7 +53,14 @@ var casai = {
     MIDDLE_RIGHT: 8,
   },
 
-  initialize: function ({ targetAudience, showConsentFormIfRequired, forceTestAds, testDeviceIds, debugGeography, mediationExtras }) {
+  initialize: function ({
+    targetAudience,
+    showConsentFormIfRequired,
+    forceTestAds,
+    testDeviceIds,
+    debugGeography,
+    mediationExtras,
+  }) {
     return nativePromise('initialize', [
       /* 0 */ cordova.version,
       /* 1 */ targetAudience,
@@ -200,11 +112,104 @@ var casai = {
     nativeCall('setTrialAdFreeInterval', [interval]);
   },
 
-  bannerAd: bannerAd,
-  mrecAd: mrecAd,
-  appOpenAd: appOpenAd,
-  interstitialAd: interstitialAd,
-  rewardedAd: rewardedAd,
+  // MARK: Banner ads
+
+  loadBannerAd: function ({ adSize, maxWidth, maxHeight, autoReload, refreshInterval }) {
+    const dpWidth = window.screen.width;
+    const dpHeight = window.screen.height;
+
+    return nativePromise('loadBannerAd', [
+      adSize,
+      Math.min(maxWidth ?? dpWidth, dpWidth),
+      Math.min(maxHeight ?? dpHeight, dpHeight),
+      autoReload ?? true,
+      refreshInterval ?? 30,
+    ]);
+  },
+
+  showBannerAd: function ({ position, offsetX, offsetY }) {
+    nativeCall('showBannerAd', [position, offsetX ?? 0, offsetY ?? 0]);
+  },
+
+  hideBannerAd: function () {
+    nativeCall('hideBannerAd', []);
+  },
+
+  destroyBannerAd: function () {
+    nativeCall('destroyBannerAd', []);
+  },
+
+  // MARK: Medium Rectangle ads
+
+  loadMRecAd: function ({ autoReload, refreshInterval }) {
+    return nativePromise('loadMRecAd', [autoReload ?? true, refreshInterval ?? 30]);
+  },
+
+  showMRecAd: function ({ position, offsetX, offsetY }) {
+    nativeCall('showMRecAd', [position, offsetX ?? 0, offsetY ?? 0]);
+  },
+
+  hideMRecAd: function () {
+    nativeCall('hideMRecAd', []);
+  },
+
+  destroyMRecAd: function () {
+    nativeCall('destroyMRecAd', []);
+  },
+
+  // MARK: AppOpen ads
+
+  loadAppOpenAd: function ({ autoReload, autoShow }) {
+    return nativePromise('loadAppOpenAd', [autoReload ?? false, autoShow ?? false]);
+  },
+
+  isAppOpenAdLoaded: function () {
+    return nativePromise('isAppOpenAdLoaded', []);
+  },
+
+  showAppOpenAd: function () {
+    return nativePromise('showAppOpenAd', []);
+  },
+
+  destroyAppOpenAd: function () {
+    nativeCall('destroyAppOpenAd', []);
+  },
+
+  // MARK: Interstitial ads
+
+  loadInterstitialAd: function ({ autoReload, autoShow, minInterval }) {
+    return nativePromise('loadInterstitialAd', [autoReload ?? false, autoShow ?? false, minInterval ?? 0]);
+  },
+
+  isInterstitialAdLoaded: function () {
+    return nativePromise('isInterstitialAdLoaded', []);
+  },
+
+  showInterstitialAd: function () {
+    return nativePromise('showInterstitialAd', []);
+  },
+
+  destroyInterstitialAd: function () {
+    nativeCall('destroyInterstitialAd', []);
+  },
+
+  // MARK: Rewarded ads
+
+  loadRewardedAd: function ({ autoReload }) {
+    return nativePromise('loadRewardedAd', [autoReload ?? false]);
+  },
+
+  isRewardedAdLoaded: function () {
+    return nativePromise('isRewardedAdLoaded', []);
+  },
+
+  showRewardedAd: function () {
+    return nativePromise('showRewardedAd', []);
+  },
+
+  destroyRewardedAd: function () {
+    nativeCall('destroyRewardedAd', []);
+  },
 };
 
 if (typeof module !== undefined && module.exports) {

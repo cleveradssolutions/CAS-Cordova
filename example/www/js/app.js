@@ -1,57 +1,52 @@
 (function () {
-  const $root = () => document.getElementById('root');
+  const $root = () => document.getElementById("root");
 
   function log(...args) {
-    const el = document.getElementById('log');
-    const line = document.createElement('div');
-    line.textContent = args.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ');
+    const el = document.getElementById("log");
+    const line = document.createElement("div");
+    line.textContent = args
+      .map(x => (typeof x === "object" ? JSON.stringify(x) : String(x)))
+      .join(" ");
     el.prepend(line);
     console.log(...args);
   }
 
   const routes = {};
-  function route(path, render) {
-    routes[path] = render;
-  }
-  function go(path) {
-    location.hash = path;
-  }
+  function route(path, render) { routes[path] = render; }
+  function go(path) { location.hash = path; }
   function render() {
-    const path = location.hash || '#/setup';
-    const fn = routes[path] || routes['#/setup'];
-    $root().innerHTML = '';
+    const path = location.hash || "#/setup";
+    const fn = routes[path] || routes["#/setup"];
+    $root().innerHTML = "";
     fn?.($root());
   }
-  window.addEventListener('hashchange', render);
+  window.addEventListener("hashchange", render);
 
-  document.addEventListener('deviceready', () => {
+  document.addEventListener("deviceready", () => {
     [
-      'casai_ad_loaded',
-      'casai_ad_load_failed',
-      'casai_ad_showed',
-      'casai_ad_show_failed',
-      'casai_ad_clicked',
-      'casai_ad_impressions',
-      'casai_ad_dismissed',
-      'casai_ad_reward',
-    ].forEach((name) => {
-      document.addEventListener(
-        name,
-        (ev) => {
-          log('EVENT:', name, ev.detail || {});
-        },
-        false,
-      );
+      "casai_ad_loaded",
+      "casai_ad_load_failed",
+      "casai_ad_showed",
+      "casai_ad_show_failed",
+      "casai_ad_clicked",
+      "casai_ad_impressions",
+      "casai_ad_dismissed",
+      "casai_ad_reward",
+    ].forEach(name => {
+      document.addEventListener(name, ev => {
+        log("EVENT:", name, ev.detail || {});
+      }, false);
     });
 
-    log('Device ready. Cordova', cordova.platformId, cordova.version);
-    if (!location.hash) location.hash = '#/setup';
+    log("Device ready. Cordova", cordova.platformId, cordova.version);
+    if (!location.hash) location.hash = "#/setup";
     render();
   });
-
-  //Setup
-  route('#/setup', (root) => {
-    root.innerHTML = `
+   
+  
+    //Setup
+    route("#/setup", (root) => {
+        root.innerHTML = `
             <div class="card">
             <div class="title">Initialize CAS</div>
             <p class="subtitle">One tap to set up SDK & continue</p>
@@ -61,39 +56,32 @@
         </div>
         `;
 
-    document.getElementById('btnInit').onclick = async () => {
-      casai
-        .initialize({
-          targetAudience: 'notchildren',
-          showConsentFormIfRequired: true,
-          forceTestAds: true,
-          testDeviceIds: [],
-          debugGeography: 'eea',
-          mediationExtras: {},
-        })
-        .then((status) => {
-          if (status.error) {
-            // CAS initialization error
-          } else {
-            // CAS initialized
-          }
-          log('CAS: initialize', status);
-          go('#/menu');
-        });
+    document.getElementById("btnInit").onclick = async () => {
+        try {
+            const status = await casai.initialize({
+            targetAudience: "notchildren",
+            showConsentFormIfRequired: true,
+            forceTestAds: true,
+            testDeviceIds: [],
+            debugGeography: "eea",
+            mediationExtras: {},
+            });
+            log("CAS: initialize", status);
+            go("#/menu");
+        } catch (e) {
+            log("ERROR: initialize", e);
+        }
     };
-    document.getElementById('btnConsent').onclick = async () => {
-      try {
-        const consentFlow = await casai.showConsentFlow({ ifRequired: true, debugGeography: 'eea' });
-        log('CAS: showConsentFlow', consentFlow);
-      } catch (e) {
-        log('ERROR: showConsentFlow', e);
-      }
-    };
-  });
+    document.getElementById("btnConsent").onclick = async () => {
+        try {
+            const consentFlow = await casai.showConsentFlow({ ifRequired: true, debugGeography: "eea" });
+            log("CAS: showConsentFlow", consentFlow);
+        } catch (e) { log("ERROR: showConsentFlow", e); }};
+    });
 
-  //Menu
-  route('#/menu', (root) => {
-    root.innerHTML = `
+    //Menu
+    route("#/menu", (root) => {
+        root.innerHTML = `
             <div class="card">
             <div class="title">Examples</div>
             <p class="subtitle">Choose an ad format to test</p>
@@ -109,14 +97,14 @@
             <button class="btn" data-go="#/adaptive">Adaptive (AdView)</button>
         </div>
         `;
-    root.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => go(b.dataset.go)));
-  });
+        root.querySelectorAll("[data-go]").forEach(b => (b.onclick = () => go(b.dataset.go)));
+    });
 
-  //Banner
-  route('#/banner', (root) => {
-    let currentPos = casai.Position.BOTTOM_CENTER;
+    //Banner 
+    route("#/banner", (root) => {
+        let currentPos = casai.Position.BOTTOM_CENTER;
 
-    root.innerHTML = `
+        root.innerHTML = `
             <div class="card">
             <div class="title">Banner</div>
             <div class="grid-2">
@@ -142,47 +130,45 @@
             </div>
             `;
 
-    document.getElementById('bLoad').onclick = async () => {
-      try {
-        await casai.bannerAd.load({
-          adSize: casai.Size.SMART,
-          autoReload: false,
-          refreshInterval: 30,
+        document.getElementById("bLoad").onclick = async () => {
+            try {
+                await casai.loadBannerAd({
+                adSize: casai.Size.SMART, 
+                autoReload: false,
+                refreshInterval: 30,
+                });
+                log("CAS: loadBannerAd");
+            } catch (e) { log("ERROR: loadBannerAd", e); }
+        };
+
+        document.getElementById("bShow").onclick = async () => {
+            try {
+                await casai.showBannerAd({ position: currentPos });
+                log("CAS: showBannerAd", currentPos);
+            } catch (e) { log("ERROR: showBannerAd", e); }
+        };
+
+        document.getElementById("bHide").onclick = () =>
+            casai.hideBannerAd().then(() => log("CAS: hideBannerAd"), e => log("ERROR:", e));
+
+        document.getElementById("bDestroy").onclick = () =>
+            casai.destroyBannerAd().then(() => log("CAS: destroyBannerAd"), e => log("ERROR:", e));
+
+        root.querySelectorAll(".pos").forEach((btn) => {
+            btn.onclick = async () => {
+                currentPos = casai.Position[btn.dataset.pos];
+                log("Position set:", btn.dataset.pos, currentPos);
+                try {
+                    await casai.showBannerAd({ position: currentPos });
+                    log("OK: reposition banner");
+                } catch (e) {  }
+        };
         });
-        log('CAS: loadBannerAd');
-      } catch (e) {
-        log('ERROR: loadBannerAd', e);
-      }
-    };
-
-    document.getElementById('bShow').onclick = async () => {
-      try {
-        await casai.bannerAd.show({ position: currentPos });
-        log('CAS: showBannerAd', currentPos);
-      } catch (e) {
-        log('ERROR: showBannerAd', e);
-      }
-    };
-
-    document.getElementById('bHide').onclick = () => casai.bannerAd.hide();
-
-    document.getElementById('bDestroy').onclick = () => casai.bannerAd.destroy();
-
-    root.querySelectorAll('.pos').forEach((btn) => {
-      btn.onclick = async () => {
-        currentPos = casai.Position[btn.dataset.pos];
-        log('Position set:', btn.dataset.pos, currentPos);
-        try {
-          await casai.bannerAd.show({ position: currentPos });
-          log('OK: reposition banner');
-        } catch (e) {}
-      };
     });
-  });
 
-  // MREC
-  route('#/mrec', (root) => {
-    root.innerHTML = `
+    // MREC
+    route("#/mrec", (root) => {
+        root.innerHTML = `
             <div class="card">
             <div class="title">MREC</div>
             <div class="grid-2">
@@ -196,22 +182,22 @@
             </div>
             `;
 
-    document.getElementById('mLoad').onclick = () =>
-      casai.mrecAd.load({ autoReload: false, refreshInterval: 30 }).then(
-        () => log('CAS: loadMRecAd'),
-        (e) => log('ERROR:', e),
-      );
+        document.getElementById("mLoad").onclick = () =>
+            casai.loadMRecAd({ autoReload: false, refreshInterval: 30 }).then(() => log("CAS: loadMRecAd"), e => log("ERROR:", e));
 
-    document.getElementById('mShow').onclick = () => casai.mrecAd.show({ position: casai.Position.MIDDLE_CENTER });
+        document.getElementById("mShow").onclick = () =>
+            casai.showMRecAd({ position: casai.Position.MIDDLE_CENTER }).then(() => log("CAS: showMRecAd"), e => log("ERROR:", e));
 
-    document.getElementById('mHide').onclick = () => casai.mrecAd.hide();
+        document.getElementById("mHide").onclick = () =>
+            casai.hideMRecAd().then(() => log("CAS: hideMRecAd"), e => log("ERROR:", e));
 
-    document.getElementById('mDestroy').onclick = () => casai.mrecAd.destroy();
-  });
+        document.getElementById("mDestroy").onclick = () =>
+            casai.destroyMRecAd().then(() => log("CAS: destroyMRecAd"), e => log("ERROR:", e));
+    });
 
-  // Adaptive
-  route('#/adaptive', (root) => {
-    root.innerHTML = `
+    // Adaptive
+    route("#/adaptive", (root) => {
+        root.innerHTML = `
             <div class="card">
             <div class="title">Adaptive Banner</div>
             <div class="grid-2">
@@ -225,30 +211,29 @@
             </div>
             `;
 
-    document.getElementById('aLoad').onclick = () =>
-      casai.bannerAd
-        .load({
-          adSize: casai.Size.ADAPTIVE,
-          maxWidth: 0,
-          maxHeight: 0,
-          autoReload: true,
-          refreshInterval: 30,
-        })
-        .then(
-          () => log('CAS: load adaptive'),
-          (e) => log('ERROR:', e),
-        );
+        document.getElementById("aLoad").onclick = () =>
+        casai.loadBannerAd({
+            adSize: casai.Size.ADAPTIVE,
+            maxWidth: 0,
+            maxHeight: 0,
+            autoReload: true,
+            refreshInterval: 30,
+        }).then(() => log("CAS: load adaptive"), e => log("ERROR:", e));
 
-    document.getElementById('aShow').onclick = () => casai.bannerAd.show({ position: casai.Position.BOTTOM_CENTER });
+        document.getElementById("aShow").onclick = () =>
+            casai.showBannerAd({ position: casai.Position.BOTTOM_CENTER }).then(() => log("CAS: show adaptive"), e => log("ERROR:", e));
 
-    document.getElementById('aHide').onclick = () => casai.bannerAd.hide();
+        document.getElementById("aHide").onclick = () =>
+            casai.hideBannerAd().then(() => log("CAS: hide adaptive"), e => log("ERROR:", e));
 
-    document.getElementById('aDestroy').onclick = () => casai.bannerAd.destroy();
-  });
+        document.getElementById("aDestroy").onclick = () =>
+            casai.destroyBannerAd().then(() => log("CAS: destroy adaptive"), e => log("ERROR:", e));
+    });
 
-  //Interstitial
-  route('#/interstitial', (root) => {
-    root.innerHTML = `
+
+    //Interstitial
+    route("#/interstitial", (root) => {
+        root.innerHTML = `
             <div class="card">
             <div class="title">Interstitial</div>
             <div class="grid-2">
@@ -259,21 +244,15 @@
             <button class="btn" onclick="location.hash='#/menu'">Back</button>
             </div>
             `;
-    document.getElementById('iLoad').onclick = () =>
-      casai.interstitialAd.load({ autoReload: false, autoShow: false, minInterval: 0 }).then(
-        () => log('CAS: load interstitial'),
-        (e) => log('ERROR:', e),
-      );
-    document.getElementById('iShow').onclick = () =>
-      casai.interstitialAd.show().then(
-        () => log('CAS interstitial dismissed'),
-        (e) => log('ERROR:', e),
-      );
-  });
+        document.getElementById("iLoad").onclick = () =>
+            casai.loadInterstitialAd({ autoReload:false, autoShow:false, minInterval:0 }).then(() => log("CAS: load interstitial"), e => log("ERROR:", e));
+        document.getElementById("iShow").onclick = () => 
+            casai.showInterstitialAd().then(() => log("CAS show interstitial"), e => log("ERROR:", e));
+    });
 
-  //Rewarded
-  route('#/rewarded', (root) => {
-    root.innerHTML = `
+    //Rewarded
+    route("#/rewarded", (root) => {
+        root.innerHTML = `
             <div class="card">
             <div class="title">Rewarded</div>
             <div class="grid-2">
@@ -285,28 +264,15 @@
             </div>
             `;
 
-    document.getElementById('rLoad').onclick = () =>
-      casai.rewardedAd.load({ autoReload: false }).then(
-        () => log('CAS load rewarded'),
-        (e) => log('ERROR:', e),
-      );
-    document.getElementById('rShow').onclick = () =>
-      casai.rewardedAd
-        .show()
-        .then((info) => {
-          if (info.isUserEarnReward) {
-            log('CAS: earn reward');
-          }
-          log('CAS: rewarded dismissed');
-        })
-        .catch((error) => {
-          log('ERROR:', error.message);
-        });
-  });
+        document.getElementById("rLoad").onclick = () =>
+            casai.loadRewardedAd({ autoReload:false }).then(() => log("CAS load rewarded"), e => log("ERROR:", e));
+        document.getElementById("rShow").onclick = () =>
+            casai.showRewardedAd().then(() => log("CAS: show rewarded"), e => log("ERROR:", e));
+    });
 
-  //App Open
-  route('#/appopen', (root) => {
-    root.innerHTML = `
+    //App Open
+    route("#/appopen", (root) => {
+        root.innerHTML = `
             <div class="card">
             <div class="title">App Open</div>
             <div class="grid-2">
@@ -318,15 +284,9 @@
             </div>
             `;
 
-    document.getElementById('oLoad').onclick = () =>
-      casai.appOpenAd.load({ autoReload: false, autoShow: false }).then(
-        () => log('CAS: load appopen'),
-        (e) => log('ERROR:', e),
-      );
-    document.getElementById('oShow').onclick = () =>
-      casai.appOpenAd.show().then(
-        () => log('CAS: show appopen'),
-        (e) => log('ERROR:', e),
-      );
-  });
+        document.getElementById("oLoad").onclick = () =>
+            casai.loadAppOpenAd({ autoReload:false, autoShow:false }).then(() => log("CAS: load appopen"), e => log("ERROR:", e));
+        document.getElementById("oShow").onclick = () => casai.showAppOpenAd().then(() => log("CAS: show appopen"), e => log("ERROR:", e));
+    });
+
 })();
