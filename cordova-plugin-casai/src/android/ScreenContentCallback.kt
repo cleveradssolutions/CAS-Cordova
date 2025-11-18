@@ -84,8 +84,8 @@ internal class ScreenContentCallback(
         plugin.emitEvent(PluginEvents.REWARD, plugin.adContentToJson(adFormat, ad))
     }
 
-    fun setPendingLoadPromiseReplacing(newCb: CallbackContext, reason: String) {
-        pendingLoadPromise?.error(plugin.cancelledLoadError(adFormat, reason).toString())
+    fun setPendingLoadPromiseReplacing(newCb: CallbackContext) {
+        pendingLoadPromise?.error(plugin.cancelledLoadError(adFormat, "Load superseded: new request started").toString())
         pendingLoadPromise = newCb
     }
 

@@ -34,14 +34,10 @@ class CASMobileAds : CordovaPlugin() {
     fun emitEvent(type: String, payload: JSONObject) {
         val js = "cordova.fireDocumentEvent(${JSONObject.quote(type)}, $payload);"
         activity.runOnUiThread {
-            try {
-                webView.engine?.evaluateJavascript(js, null) ?: webView.loadUrl("javascript:$js")
-            } catch (_: Throwable) {
-                webView.loadUrl("javascript:$js")
-            }
+            webView.engine?.evaluateJavascript(js, null) ?: webView.loadUrl("javascript:$js")
         }
     }
-    
+
     private var casId: String = ""
 
     private val bannerController = BannerController(this, AdFormat.BANNER)
@@ -139,7 +135,7 @@ class CASMobileAds : CordovaPlugin() {
             "loadInterstitialAd" -> loadInterstitialAd(data, callbackContext)
             "isInterstitialAdLoaded" -> sendIsLoaded(callbackContext, interstitialAd?.isLoaded == true)
             "showInterstitialAd" -> showInterstitialAd(callbackContext)
-            "destroyInterstitialAd" -> { interstitialAd?.destroy(); callbackContext.success() }
+            "destroyInterstitialAd" -> { interstitialAd?.destroy(); interstitialAd = null; callbackContext.success() }
 
             "loadRewardedAd" -> loadRewardedAd(data, callbackContext)
             "isRewardedAdLoaded" -> sendIsLoaded(callbackContext, rewardedAd?.isLoaded == true)
@@ -317,7 +313,7 @@ class CASMobileAds : CordovaPlugin() {
         val ad = appOpenAd ?: return callbackContext.error(errorJson(AdFormat.APP_OPEN, AdError.NOT_INITIALIZED))
         val callback = appOpenCallback!!
 
-        callback.setPendingLoadPromiseReplacing(callbackContext, "Load superseded: new request started")
+        callback.setPendingLoadPromiseReplacing(callbackContext)
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload
@@ -351,7 +347,7 @@ class CASMobileAds : CordovaPlugin() {
         val ad = interstitialAd ?: return callbackContext.error(errorJson(AdFormat.INTERSTITIAL, AdError.NOT_INITIALIZED))
         val callback = interstitialCallback!!
 
-        callback.setPendingLoadPromiseReplacing(callbackContext, "Load superseded: new request started")
+        callback.setPendingLoadPromiseReplacing(callbackContext)
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload
@@ -384,7 +380,7 @@ class CASMobileAds : CordovaPlugin() {
         val ad = rewardedAd ?: return callbackContext.error(errorJson(AdFormat.REWARDED, AdError.NOT_INITIALIZED))
         val callback = rewardedCallback!!
 
-        callback.setPendingLoadPromiseReplacing(callbackContext, "Load superseded: new request started")
+        callback.setPendingLoadPromiseReplacing(callbackContext)
 
         callback.pendingLoadPromise = callbackContext
         ad.isAutoloadEnabled = autoload

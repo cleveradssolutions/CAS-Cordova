@@ -54,14 +54,14 @@ class BannerController(
     private var maxWdp: Int = 0
     private var maxHdp: Int = 0
 
-    private val showTask: () -> Unit = {
+    private val showTask = Runnable {
         bannerView?.let {
             it.layoutParams = buildLayoutParamsForCurrentState(it)
             it.visibility = View.VISIBLE
         }
     }
 
-    private val hideTask: () -> Unit = {
+    private val hideTask =Runnable {
         bannerView?.visibility = View.GONE
     }
 
