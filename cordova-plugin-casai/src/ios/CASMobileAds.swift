@@ -25,22 +25,21 @@ class CASMobileAds: CDVPlugin {
     
     @objc func initialize(_ command: CDVInvokedUrlCommand) {
         // nativePromise('initialize', [
-        // /* 0 */ cordova.version,
-        // /* 1 */ casIdForAndroid ?? '',
-        // /* 2 */ casIdForIOS ?? '',
-        // /* 3 */ targetAudience,
-        // /* 4 */ showConsentFormIfRequired ?? true,
-        // /* 5 */ forceTestAds ?? false,
-        // /* 6 */ testDeviceIds ?? [],
-        // /* 7 */ debugGeography ?? 'eea',
-        // /* 8 */ mediationExtras ?? {}
-        let casIdForIOS = command.arguments[2] as? String ?? ""
-        let targetAudience = command.arguments[3] as? String ?? ""
-        let showConsentForm = command.arguments[4] as? Bool ?? true
-        let forceTestAds = command.arguments[5] as? Bool ?? false
-        let testDeviceIds = command.arguments[6] as? [String] ?? []
-        let debugGeography = command.arguments[7] as? String ?? "eea"
-        let mediationExtras = command.arguments[8] as? [String: Any] ?? [:]
+        // /* 0 */ targetAudience,
+        // /* 1 */ showConsentFormIfRequired ?? true,
+        // /* 2 */ forceTestAds ?? false,
+        // /* 3 */ testDeviceIds ?? [],
+        // /* 4 */ debugGeography ?? 'eea',
+        // /* 5 */ mediationExtras ?? {}
+        
+        let casIdForIOS = "casid"
+        
+        let targetAudience = command.arguments[0] as? String ?? ""
+        let showConsentForm = command.arguments[1] as? Bool ?? true
+        let forceTestAds = command.arguments[2] as? Bool ?? false
+        let testDeviceIds = command.arguments[3] as? [String] ?? []
+        let debugGeography = command.arguments[4] as? String ?? "eea"
+        let mediationExtras = command.arguments[5] as? [String: Any] ?? [:]
         
         let consentFlow = CASConsentFlow()
         consentFlow.isEnabled = showConsentForm
