@@ -16,7 +16,7 @@ interface CASMobileAds {
    */
   readonly Format: {
     BANNER: 'Banner';
-    MREC: 'MediumRectangle';
+    MREC: 'MREC';
     APPOPEN: 'AppOpen';
     INTERSTITIAL: 'Interstitial';
     REWARDED: 'Rewarded';
@@ -139,7 +139,7 @@ interface CASMobileAds {
     /**
      * Indicates whether to show the consent form only if required.
      */
-    ifRequired: Boolean;
+    ifRequired?: Boolean;
     /**
      * Optional. Sets the debug geography for testing purposes
      * (e.g., to simulate different regions for consent behavior)
