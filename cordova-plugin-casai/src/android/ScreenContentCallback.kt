@@ -6,62 +6,65 @@ import com.cleveradssolutions.sdk.OnAdImpressionListener
 import com.cleveradssolutions.sdk.screen.OnRewardEarnedListener
 import com.cleveradssolutions.sdk.screen.ScreenAdContentCallback
 import com.cleversolutions.ads.AdError
-import org.apache.cordova.CordovaPlugin
-import org.json.JSONObject
+import org.apache.cordova.CallbackContext
 
 internal class ScreenContentCallback(
-    private val plugin: CordovaPlugin,
-    private val format: AdFormat
+    private val plugin: CASMobileAds,
+    private val adFormat: AdFormat,
+    private val resolveOnReward: Boolean = false
 ) : ScreenAdContentCallback(), OnAdImpressionListener, OnRewardEarnedListener {
 
-    private fun jsFormat(format: AdFormat): String = when (format) {
-        AdFormat.BANNER -> "Banner"
-        AdFormat.INLINE_BANNER -> "Banner"
-        AdFormat.MEDIUM_RECTANGLE -> "MediumRectangle"
-        AdFormat.APP_OPEN -> "AppOpen"
-        AdFormat.INTERSTITIAL -> "Interstitial"
-        AdFormat.REWARDED -> "Rewarded"
-        AdFormat.NATIVE -> "Native"
+    private var pendingLoadPromise: CallbackContext? = null
+    private var pendingShowPromise: CallbackContext? = null
+
+    fun setPending(load: CallbackContext? = null, show: CallbackContext? = null) {
+        if (load != null) pendingLoadPromise = load
+        if (show != null) pendingShowPromise = show
     }
 
-    private fun adInfoJson(ad: AdContentInfo) = JSONObject()
-        .put("format", jsFormat(format))
-
-    private fun errorJson(error: AdError) = JSONObject()
-        .put("format", jsFormat(format))
-        .put("code", error.code)
-        .put("message", error.message)
-
-
     override fun onAdLoaded(ad: AdContentInfo) {
-        CordovaEvents.emit(plugin, "casai_ad_loaded", adInfoJson(ad))
+        pendingLoadPromise?.success()
+        pendingLoadPromise = null
+        plugin.emitEvent(PluginEvents.LOADED, adInfoJson(adFormat))
     }
 
     override fun onAdFailedToLoad(format: AdFormat, error: AdError) {
-        CordovaEvents.emit(plugin, "casai_ad_load_failed", errorJson(error))
+        plugin.emitEvent(PluginEvents.LOAD_FAILED, errorJson(adFormat, error))
+        pendingLoadPromise?.error(error.message)
+        pendingLoadPromise = null
     }
 
     override fun onAdShowed(ad: AdContentInfo) {
-        CordovaEvents.emit(plugin, "casai_ad_showed", adInfoJson(ad))
+        plugin.emitEvent(PluginEvents.SHOWED, adInfoJson(adFormat))
     }
 
     override fun onAdFailedToShow(format: AdFormat, error: AdError) {
-        CordovaEvents.emit(plugin, "casai_ad_show_failed", errorJson(error))
+        plugin.emitEvent(PluginEvents.SHOW_FAILED, errorJson(adFormat, error))
+        pendingShowPromise?.error(errorJson(adFormat, error).toString())
+        pendingShowPromise = null
     }
 
     override fun onAdClicked(ad: AdContentInfo) {
-        CordovaEvents.emit(plugin, "casai_ad_clicked", adInfoJson(ad))
+        plugin.emitEvent(PluginEvents.CLICKED, adInfoJson(adFormat))
     }
 
     override fun onAdImpression(ad: AdContentInfo) {
-        CordovaEvents.emit(plugin, "casai_ad_impressions", adInfoJson(ad))
+        plugin.emitEvent(PluginEvents.IMPRESSIONS, adContentToJson(adFormat, ad))
     }
 
     override fun onAdDismissed(ad: AdContentInfo) {
-        CordovaEvents.emit(plugin, "casai_ad_dismissed", adInfoJson(ad))
+        if (!resolveOnReward) {
+            pendingShowPromise?.success()
+            pendingShowPromise = null
+        }
+        plugin.emitEvent(PluginEvents.DISMISSED, adInfoJson(adFormat))
     }
 
     override fun onUserEarnedReward(ad: AdContentInfo) {
-        CordovaEvents.emit(plugin, "casai_ad_reward", adInfoJson(ad))
+        plugin.emitEvent(PluginEvents.REWARD, adInfoJson(adFormat))
+        if (resolveOnReward) {
+            pendingShowPromise?.success()
+            pendingShowPromise = null
+        }
     }
 }
