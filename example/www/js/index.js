@@ -21,11 +21,9 @@ var app = {
     async initCAS() {
         try {
             const result = await window.casai.initialize({
-                casIdForAndroid: "test-android-id",
-                casIdForIOS: "test-ios-id",
                 targetAudience: "notchildren",
-                forceTestAds: true,                
-                showConsentFormIfRequired: false,                
+                showConsentFormIfRequired: false,
+                forceTestAds: true,                                
                 debugGeography: "eea",
             });            
             console.log('CAS initialized:', result);
