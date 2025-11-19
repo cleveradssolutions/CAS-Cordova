@@ -1,32 +1,31 @@
-route("#/setup", (root) => {
-  root.innerHTML = `
-      <div class="card">
-      <div class="title">Initialize CAS</div>
-      <p class="subtitle">One tap to set up SDK & continue</p>
-      <button id="btnInit" class="btn">Initialize</button>
-      <div class="divider"></div>
-      <button id="btnConsent" class="btn">Show Consent (if required)</button>
-  </div>
-  `;
+route('#/setup', function (root) {
+  renderTemplate('tmpl-setup', root);
 
-  document.getElementById("btnInit").onclick = async () => {
-    try {
-      const status = await casai.initialize({
-        targetAudience: "notchildren",
-        showConsentFormIfRequired: true,
-        forceTestAds: true,
-        testDeviceIds: [],
-        debugGeography: "eea",
-        mediationExtras: {},
-      });
-      log("CAS: initialize", status);
-      go("#/menu");
-    } catch (e) { log("ERROR: initialize", e); }
+  var buttonInit = /** @type {HTMLButtonElement} */ (document.getElementById('btnInit'));
+  var buttonConsent = /** @type {HTMLButtonElement} */ (document.getElementById('btnConsent'));
+
+  buttonInit.onclick = function () {
+    var casai = getCAS();
+    casai.initialize({
+      targetAudience: 'notchildren',
+      showConsentFormIfRequired: true,
+      forceTestAds: true,
+      testDeviceIds: [],
+      debugGeography: 'eea',
+      mediationExtras: {}
+    })
+    .then(function (status) {
+      if (status && status.error) log('Initialize status with warning', status);
+      log('CAS initialized', status);
+      go('#/menu');
+    })
+    .catch(function (e) { log('Initialize failed', e); });
   };
-  document.getElementById("btnConsent").onclick = async () => {
-    try {
-      const consentFlow = await casai.showConsentFlow({ ifRequired: true, debugGeography: "eea" });
-      log("CAS: showConsentFlow", consentFlow);
-    } catch (e) { log("ERROR: showConsentFlow", e); }
+
+  buttonConsent.onclick = function () {
+    var casai = getCAS();
+    casai.showConsentFlow({ ifRequired: true, debugGeography: 'eea' })
+      .then(function (result) { log('Consent flow result', result); })
+      .catch(function (e) { log('Consent flow failed', e); });
   };
 });

@@ -2,28 +2,172 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width" />
+    <meta
+      name="viewport"
+      content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width"
+    />
     <title>CAS Cordova Demo</title>
     <link rel="stylesheet" href="css/app.css" />
   </head>
   <body>
+    <!-- Setup -->
+    <template id="tmpl-setup">
+      <div class="card">
+        <div class="title">Initialize CAS</div>
+        <p class="subtitle">One tap to set up SDK &amp; continue</p>
+        <button id="btnInit" class="btn">Initialize</button>
+        <div class="divider"></div>
+        <button id="btnConsent" class="btn">Show Consent (if required)</button>
+      </div>
+    </template>
+
+    <!-- Menu -->
+    <template id="tmpl-menu">
+      <div class="card">
+        <div class="title">Examples</div>
+        <p class="subtitle">Choose an ad format to test</p>
+
+        <button class="btn" data-go="#/interstitial">Interstitial</button>
+        <button class="btn" data-go="#/rewarded">Rewarded</button>
+        <button class="btn" data-go="#/appopen">App Open</button>
+
+        <div class="divider"></div>
+
+        <button class="btn" data-go="#/banner">Banner (AdView)</button>
+        <button class="btn" data-go="#/mrec">MREC (AdView)</button>
+        <button class="btn" data-go="#/adaptive">Adaptive (AdView)</button>
+      </div>
+    </template>
+
+    <!-- Banner -->
+    <template id="tmpl-banner">
+      <div class="card">
+        <div class="title">Banner</div>
+
+        <div class="grid-2">
+          <button id="bLoad" class="btn">Load Banner</button>
+          <button id="bShow" class="btn">Show Banner</button>
+          <button id="bHide" class="btn">Hide Banner</button>
+          <button id="bDestroy" class="btn">Destroy Banner</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <p class="subtitle">Banner Position</p>
+        <div class="grid-3">
+          <button class="btn pos" data-pos="TOP_LEFT">Top Left</button>
+          <button class="btn pos" data-pos="TOP_CENTER">Top Center</button>
+          <button class="btn pos" data-pos="TOP_RIGHT">Top Right</button>
+          <button class="btn pos" data-pos="BOTTOM_LEFT">Bottom Left</button>
+          <button class="btn pos" data-pos="BOTTOM_CENTER">Bottom Center</button>
+          <button class="btn pos" data-pos="BOTTOM_RIGHT">Bottom Right</button>
+        </div>
+
+        <div class="divider"></div>
+        <button class="btn" onclick="location.hash='#/menu'">Back</button>
+      </div>
+    </template>
+
+    <!-- MREC -->
+    <template id="tmpl-mrec">
+      <div class="card">
+        <div class="title">MREC</div>
+
+        <div class="grid-2">
+          <button id="mLoad" class="btn">Load MREC</button>
+          <button id="mShow" class="btn">Show (Center)</button>
+          <button id="mHide" class="btn">Hide</button>
+          <button id="mDestroy" class="btn">Destroy</button>
+        </div>
+
+        <div class="divider"></div>
+        <button class="btn" onclick="location.hash='#/menu'">Back</button>
+      </div>
+    </template>
+
+    <!-- Adaptive -->
+    <template id="tmpl-adaptive">
+      <div class="card">
+        <div class="title">Adaptive Banner</div>
+
+        <div class="grid-2">
+          <button id="aLoad" class="btn">Load</button>
+          <button id="aShow" class="btn">Show (Bottom)</button>
+          <button id="aHide" class="btn">Hide</button>
+          <button id="aDestroy" class="btn">Destroy</button>
+        </div>
+
+        <div class="divider"></div>
+        <button class="btn" onclick="location.hash='#/menu'">Back</button>
+      </div>
+    </template>
+
+    <!-- Interstitial -->
+    <template id="tmpl-interstitial">
+      <div class="card">
+        <div class="title">Interstitial</div>
+
+        <div class="grid-2">
+          <button id="iLoad" class="btn">Load</button>
+          <button id="iShow" class="btn">Show</button>
+        </div>
+
+        <div class="divider"></div>
+        <button class="btn" onclick="location.hash='#/menu'">Back</button>
+      </div>
+    </template>
+
+    <!-- Rewarded -->
+    <template id="tmpl-rewarded">
+      <div class="card">
+        <div class="title">Rewarded</div>
+
+        <div class="grid-2">
+          <button id="rLoad" class="btn">Load</button>
+          <button id="rShow" class="btn">Show</button>
+        </div>
+
+        <div class="divider"></div>
+        <button class="btn" onclick="location.hash='#/menu'">Back</button>
+      </div>
+    </template>
+
+    <!-- App Open -->
+    <template id="tmpl-appopen">
+      <div class="card">
+        <div class="title">App Open</div>
+
+        <div class="grid-2">
+          <button id="oLoad" class="btn">Load</button>
+          <button id="oShow" class="btn">Show</button>
+        </div>
+
+        <div class="divider"></div>
+        <button class="btn" onclick="location.hash='#/menu'">Back</button>
+      </div>
+    </template>
+
     <header class="topbar">CAS Cordova Demo</header>
 
     <main id="root"></main>
 
-    <section id="logbox"><div id="log"></div></section>
+    <section id="logbox">
+      <div id="log"></div>
+    </section>
 
     <script src="cordova.js"></script>
 
-    <script src="js/app.js"></script>
+    <!-- App -->
+    <script src="js/App.js"></script>
 
-    <script src="js/screens/setup.js"></script>
-    <script src="js/screens/menu.js"></script>
-    <script src="js/screens/banner.js"></script>
-    <script src="js/screens/mrec.js"></script>
-    <script src="js/screens/adaptive.js"></script>
-    <script src="js/screens/interstitial.js"></script>
-    <script src="js/screens/rewarded.js"></script>
-    <script src="js/screens/appopen.js"></script>
+    <!-- Screens -->
+    <script src="js/screens/Setup.js"></script>
+    <script src="js/screens/Menu.js"></script>
+    <script src="js/screens/BannerExample.js"></script>
+    <script src="js/screens/MRecExample.js"></script>
+    <script src="js/screens/AdaptiveBannerExample.js"></script>
+    <script src="js/screens/InterstitialExample.js"></script>
+    <script src="js/screens/RewardedExample.js"></script>
+    <script src="js/screens/AppOpenExample.js"></script>
   </body>
 </html>

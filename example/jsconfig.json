@@ -7,5 +7,5 @@
       "./node_modules/@types"
     ]
   },
-  "include": ["www/**/*.js"]
+  "include": ["www/js/**/*.js"]
 }
