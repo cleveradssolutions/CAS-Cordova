@@ -67,7 +67,7 @@ class BannerController(
 
     private fun rejectPendingLoadIfAny(reason: String) {
         pendingLoadPromise?.let { old ->
-            old.error(plugin.cancelledLoadError(adFormat, reason).toString())
+            old.error(plugin.cancelledLoadError(adFormat))
             pendingLoadPromise = null
         }
     }
@@ -82,7 +82,7 @@ class BannerController(
         refreshSeconds: Int,
         promise: CallbackContext
     ) {
-        rejectPendingLoadIfAny("Load superseded: new parameters applied")
+        rejectPendingLoadIfAny()
 
         pendingLoadPromise = promise
         this.sizeCode = sizeCode

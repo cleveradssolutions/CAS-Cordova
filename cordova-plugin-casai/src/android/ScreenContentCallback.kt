@@ -85,7 +85,7 @@ internal class ScreenContentCallback(
     }
 
     fun setPendingLoadPromiseReplacing(newCb: CallbackContext) {
-        pendingLoadPromise?.error(plugin.cancelledLoadError(adFormat, "Load superseded: new request started").toString())
+        pendingLoadPromise?.error(plugin.cancelledLoadError(adFormat))
         pendingLoadPromise = newCb
     }
 

@@ -63,11 +63,8 @@ class CASMobileAds : CordovaPlugin() {
             .put("code", error.code)
             .put("message", error.message)
 
-    fun cancelledLoadError(format: AdFormat, reason: String): JSONObject =
-        JSONObject()
-            .put("format", format.label)
-            .put("code", 499)
-            .put("message", reason)
+    fun cancelledLoadError(format: AdFormat): String =
+        errorJson(format, AdError(499, "Load Promise interrupted by new load call")).toString()
 
     fun adContentToJson(format: AdFormat, info: AdContentInfo): JSONObject {
         val precision = when (info.revenuePrecision) {
