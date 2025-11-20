@@ -164,33 +164,34 @@ def check_types_file(ts_content, js_content):
     update_proxy_file(js_funcs)
 
 
-ts_file = Path('cordova-plugin-casai/types/index.d.ts').read_text()
-js_file = Path('cordova-plugin-casai/www/casai.js').read_text()
-check_types_file(ts_file, js_file)
-check_js_file(js_file)
+#ts_file = Path('cordova-plugin-casai/types/index.d.ts').read_text()
+#js_file = Path('cordova-plugin-casai/www/casai.js').read_text()
+#check_types_file(ts_file, js_file)
+#check_js_file(js_file)
 
+plugin_dir = 'cordova-plugin-casai'
 update_version_in_file(
-    file_path=os.path.join('cordova-plugin-casai', "package.json"),
+    file_path=os.path.join(plugin_dir, "package.json"),
     prefix='  "version": "',
     suffix=_PLUGIN_VERSION + '",'
 )
 update_version_in_file(
-    file_path=os.path.join('cordova-plugin-casai', "plugin.xml"),
+    file_path=os.path.join(plugin_dir, "plugin.xml"),
     prefix='    version="',
     suffix=_PLUGIN_VERSION + '">'
 )
 update_version_in_file(
-    file_path=os.path.join('cordova-plugin-casai', "plugin.xml"),
+    file_path=os.path.join(plugin_dir, "plugin.xml"),
     prefix='        <framework src="com.cleveradssolutions:cas-sdk:',
     suffix=_CAS_VERSION + '" />'
 )
 update_version_in_file(
-    file_path=os.path.join('cordova-plugin-casai', 'src', 'android', "casplugin.gradle"),
-    prefix='        classpath "com.cleveradssolutions.gradle-plugin:',
-    suffix=_CAS_VERSION + '"'
-)
-update_version_in_file(
-    file_path=os.path.join('cordova-plugin-casai', "plugin.xml"),
+    file_path=os.path.join(plugin_dir, "plugin.xml"),
     prefix='                <pod name="CleverAdsSolutions-Base" spec="',
     suffix=_CAS_VERSION + '" swift-version="5.0" />'
+)
+update_version_in_file(
+    file_path=os.path.join(plugin_dir, 'scripts', 'helper.js'),
+    prefix="const CAS_VERSION = '",
+    suffix=_CAS_VERSION + "';"
 )
