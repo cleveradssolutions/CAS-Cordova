@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 
 module.exports = function (context) {
   let config = new helper.CASConfig(context, 'ios');
-  let rubyScript = path.join(context.opts.plugin.dir, 'scripts', 'casIOSConfig.rb');
+  let rubyScript = path.join(context.opts.plugin.dir, 'scripts', 'ios_project_config.rb');
 
   var casId = config.findVariable('IOS_CAS_ID');
   if (casId) {

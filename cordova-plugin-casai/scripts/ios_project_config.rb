@@ -14,7 +14,7 @@ module CASConfig
     ARG_HELP = '--help'
 
     XC_PROJECT_FILE = '.xcodeproj'
-    SCRIPT_VERSION = '1.4'
+    SCRIPT_VERSION = '1.5'
 
     class << self
         attr_accessor :casId, :project_path, :gad_included, :clean_install
@@ -60,8 +60,6 @@ module CASConfig
             yield(instance)
             if instance.dirt?
                 begin
-                    puts "Work in: " + Dir.pwd
-                    puts "PList path: " + path
                     Xcodeproj::Plist.write_to_path(instance.plist, path)
                     puts "Updated: " + path
                 rescue IOError => e
