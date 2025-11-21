@@ -1,42 +1,38 @@
 route('#/banner', function (root) {
-  var casai = getCAS();
-  var currentBannerPosition = casai.Position.BOTTOM_CENTER;
-
   renderTemplate('tmpl-banner', root);
 
-  var buttonLoadBanner = /** @type {HTMLButtonElement} */ (document.getElementById('bLoad'));
-  var buttonShowBanner = /** @type {HTMLButtonElement} */ (document.getElementById('bShow'));
-  var buttonHideBanner = /** @type {HTMLButtonElement} */ (document.getElementById('bHide'));
-  var buttonDestroyBanner = /** @type {HTMLButtonElement} */ (document.getElementById('bDestroy'));
+  var cas = window.casai;
+  var currentPos = cas.Position.BOTTOM_CENTER;
 
-  buttonLoadBanner.onclick = function () {
-    casai.bannerAd.load({ adSize: casai.Size.SMART, autoReload: false, refreshInterval: 30 })
-      .then(function () { log('Banner loaded'); })
-      .catch(function (e) { log('Banner load failed', e); });
-  };
+  function onBannerLoad() {
+    cas.bannerAd.load({ adSize: cas.Size.SMART, autoReload: false, refreshInterval: 30 })
+      .then(function (info) { console.log('Banner load()', info); })
+      .catch(function (e) { console.log('Banner load() failed', e); });
+  }
+  function onBannerShow() {
+    cas.bannerAd.show({ position: currentPos });
+    console.log('Banner show()', currentPos);
+  }
+  function onBannerHide() {
+    cas.bannerAd.hide();
+    console.log('Banner hide()');
+  }
+  function onBannerDestroy() {
+    cas.bannerAd.destroy();
+    console.log('Banner destroy()');
+  }
+  function onBannerPositionClick(btn) {
+    currentPos = cas.Position[btn.dataset.pos];
+    console.log('Banner position ->', btn.dataset.pos, currentPos);
+    cas.bannerAd.show({ position: currentPos });
+  }
 
-  buttonShowBanner.onclick = function () {
-    casai.bannerAd.show({ position: currentBannerPosition });
-    log('Banner show', currentBannerPosition);
-  };
+  document.getElementById('bLoad').onclick = onBannerLoad;
+  document.getElementById('bShow').onclick = onBannerShow;
+  document.getElementById('bHide').onclick = onBannerHide;
+  document.getElementById('bDestroy').onclick = onBannerDestroy;
 
-  buttonHideBanner.onclick = function () {
-    casai.bannerAd.hide();
-    log('Banner hide');
-  };
-
-  buttonDestroyBanner.onclick = function () {
-    casai.bannerAd.destroy();
-    log('Banner destroy');
-  };
-
-  var positionButtons = /** @type {NodeListOf<HTMLButtonElement>} */ (root.querySelectorAll('.pos'));
-  positionButtons.forEach(function (button) {
-    button.onclick = function () {
-      var key = button.dataset.pos;
-      currentBannerPosition = casai.Position[key];
-      log('Banner position set to', key, currentBannerPosition);
-      casai.bannerAd.show({ position: currentBannerPosition });
-    };
+  root.querySelectorAll('.pos').forEach(function (btn) {
+    btn.onclick = function () { onBannerPositionClick(btn); };
   });
 });

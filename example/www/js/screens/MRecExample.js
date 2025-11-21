@@ -1,29 +1,27 @@
 route('#/mrec', function (root) {
-  var casai = getCAS();
-
   renderTemplate('tmpl-mrec', root);
+  var cas = window.casai;
 
-  var buttonLoadMrec = /** @type {HTMLButtonElement} */ (document.getElementById('mLoad'));
-  var buttonShowMrec = /** @type {HTMLButtonElement} */ (document.getElementById('mShow'));
-  var buttonHideMrec = /** @type {HTMLButtonElement} */ (document.getElementById('mHide'));
-  var buttonDestroyMrec = /** @type {HTMLButtonElement} */ (document.getElementById('mDestroy'));
+  function onMrecLoad() {
+    cas.mrecAd.load({ autoReload: false, refreshInterval: 30 })
+      .then(function (info) { console.log('MREC load()', info); })
+      .catch(function (e) { console.log('MREC load() failed', e); });
+  }
+  function onMrecShow() {
+    cas.mrecAd.show({ position: cas.Position.MIDDLE_CENTER });
+    console.log('MREC show()');
+  }
+  function onMrecHide() {
+    cas.mrecAd.hide();
+    console.log('MREC hide()');
+  }
+  function onMrecDestroy() {
+    cas.mrecAd.destroy();
+    console.log('MREC destroy()');
+  }
 
-  buttonLoadMrec.onclick = function () {
-    casai.mrecAd.load({ autoReload: false, refreshInterval: 30 })
-  };
-
-  buttonShowMrec.onclick = function () {
-    casai.mrecAd.show({ position: casai.Position.MIDDLE_CENTER });
-    log('MREC show');
-  };
-
-  buttonHideMrec.onclick = function () {
-    casai.mrecAd.hide();
-    log('MREC hide');
-  };
-
-  buttonDestroyMrec.onclick = function () {
-    casai.mrecAd.destroy();
-    log('MREC destroy');
-  };
+  document.getElementById('mLoad').onclick = onMrecLoad;
+  document.getElementById('mShow').onclick = onMrecShow;
+  document.getElementById('mHide').onclick = onMrecHide;
+  document.getElementById('mDestroy').onclick = onMrecDestroy;
 });

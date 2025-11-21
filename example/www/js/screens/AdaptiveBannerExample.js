@@ -1,34 +1,33 @@
 route('#/adaptive', function (root) {
-  var casai = getCAS();
-
   renderTemplate('tmpl-adaptive', root);
+  var cas = window.casai;
 
-  var buttonLoadAdaptive = /** @type {HTMLButtonElement} */ (document.getElementById('aLoad'));
-  var buttonShowAdaptive = /** @type {HTMLButtonElement} */ (document.getElementById('aShow'));
-  var buttonHideAdaptive = /** @type {HTMLButtonElement} */ (document.getElementById('aHide'));
-  var buttonDestroyAdaptive = /** @type {HTMLButtonElement} */ (document.getElementById('aDestroy'));
-
-  buttonLoadAdaptive.onclick = function () {
-    casai.bannerAd.load({
-      adSize: casai.Size.ADAPTIVE,
+  function onAdaptiveLoad() {
+    cas.bannerAd.load({
+      adSize: cas.Size.ADAPTIVE,
       maxWidth: 0,
       maxHeight: 0,
       autoReload: true,
       refreshInterval: 30
     })
-  };
+    .then(function (info) { console.log('Adaptive load()', info); })
+    .catch(function (e) { console.log('Adaptive load() failed', e); });
+  }
+  function onAdaptiveShow() {
+    cas.bannerAd.show({ position: cas.Position.BOTTOM_CENTER });
+    console.log('Adaptive show()');
+  }
+  function onAdaptiveHide() {
+    cas.bannerAd.hide();
+    console.log('Adaptive hide()');
+  }
+  function onAdaptiveDestroy() {
+    cas.bannerAd.destroy();
+    console.log('Adaptive destroy()');
+  }
 
-  buttonShowAdaptive.onclick = function () {
-    casai.bannerAd.show({ position: casai.Position.BOTTOM_CENTER });
-    log('Adaptive banner show');
-  };
-
-  buttonHideAdaptive.onclick = function () { 
-    casai.bannerAd.hide(); 
-    log('Adaptive banner hide'); 
-  };
-  buttonDestroyAdaptive.onclick = function () {
-     casai.bannerAd.destroy(); 
-     log('Adaptive banner destroy'); 
-    };
+  document.getElementById('aLoad').onclick = onAdaptiveLoad;
+  document.getElementById('aShow').onclick = onAdaptiveShow;
+  document.getElementById('aHide').onclick = onAdaptiveHide;
+  document.getElementById('aDestroy').onclick = onAdaptiveDestroy;
 });

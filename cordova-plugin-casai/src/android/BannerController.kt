@@ -65,7 +65,7 @@ class BannerController(
         bannerView?.visibility = View.GONE
     }
 
-    private fun rejectPendingLoadIfAny(reason: String) {
+    private fun rejectPendingLoadIfAny() {
         pendingLoadPromise?.let { old ->
             old.error(plugin.cancelledLoadError(adFormat))
             pendingLoadPromise = null

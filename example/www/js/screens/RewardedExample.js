@@ -1,27 +1,22 @@
 route('#/rewarded', function (root) {
-  var casai = getCAS();
-
   renderTemplate('tmpl-rewarded', root);
+  var cas = window.casai;
 
-  var buttonLoadRewarded = /** @type {HTMLButtonElement} */ (document.getElementById('rLoad'));
-  var buttonShowRewarded = /** @type {HTMLButtonElement} */ (document.getElementById('rShow'));
+  function onRewardedLoad() {
+    cas.rewardedAd.load({ autoReload: false })
+      .then(function (info) { console.log('Rewarded load()', info); })
+      .catch(function (e) { console.log('Rewarded load() failed', e); });
+  }
 
-  buttonLoadRewarded.onclick = function () {
-    casai.rewardedAd.load({ autoReload: false })
-      
-  }; 
-
-  buttonShowRewarded.onclick = function () {
-    casai.rewardedAd
-      .show()
+  function onRewardedShow() {
+    cas.rewardedAd.show()
       .then(function (info) {
-        if (info && info.isUserEarnReward) {
-          log('User earned reward - grant here!', info);
-        } else {
-          log('Rewarded closed without earning reward', info);
-        }
+        if (info.isUserEarnReward) console.log('Rewarded: user earned reward', info);
+        else console.log('Rewarded closed without reward', info);
       })
-  };
+      .catch(function (e) { console.log('Rewarded show() failed', e); });
+  }
+
+  document.getElementById('rLoad').onclick = onRewardedLoad;
+  document.getElementById('rShow').onclick = onRewardedShow;
 });
-
-

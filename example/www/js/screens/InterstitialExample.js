@@ -1,16 +1,18 @@
 route('#/interstitial', function (root) {
-  var casai = getCAS();
-
   renderTemplate('tmpl-interstitial', root);
+  var cas = window.casai;
 
-  var buttonLoadInterstitial = /** @type {HTMLButtonElement} */ (document.getElementById('iLoad'));
-  var buttonShowInterstitial = /** @type {HTMLButtonElement} */ (document.getElementById('iShow'));
+  function onInterstitialLoad() {
+    cas.interstitialAd.load({ autoReload: false, autoShow: false, minInterval: 0 })
+      .then(function (info) { console.log('Interstitial load()', info); })
+      .catch(function (e) { console.log('Interstitial load() failed', e); });
+  }
+  function onInterstitialShow() {
+    cas.interstitialAd.show()
+      .then(function (info) { console.log('Interstitial dismissed', info); })
+      .catch(function (e) { console.log('Interstitial show() failed', e); });
+  }
 
-  buttonLoadInterstitial.onclick = function () {
-    casai.interstitialAd.load({ autoReload: false, autoShow: false, minInterval: 0 })
-  };
-
-  buttonShowInterstitial.onclick = function () {
-    casai.interstitialAd.show()
-  };
+  document.getElementById('iLoad').onclick = onInterstitialLoad;
+  document.getElementById('iShow').onclick = onInterstitialShow;
 });

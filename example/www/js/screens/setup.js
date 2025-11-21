@@ -5,8 +5,8 @@ route('#/setup', function (root) {
   var buttonConsent = /** @type {HTMLButtonElement} */ (document.getElementById('btnConsent'));
 
   buttonInit.onclick = function () {
-    var casai = getCAS();
-    casai.initialize({
+    var cas = window.casai;
+    cas.initialize({
       targetAudience: 'notchildren',
       showConsentFormIfRequired: true,
       forceTestAds: true,
@@ -22,9 +22,10 @@ route('#/setup', function (root) {
     .catch(function (e) { log('Initialize failed', e); });
   };
 
+
   buttonConsent.onclick = function () {
-    var casai = getCAS();
-    casai.showConsentFlow({ ifRequired: true, debugGeography: 'eea' })
+    var cas = window.casai;
+    cas.showConsentFlow({ ifRequired: true, debugGeography: 'eea' })
       .then(function (result) { log('Consent flow result', result); })
       .catch(function (e) { log('Consent flow failed', e); });
   };
