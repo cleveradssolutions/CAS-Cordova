@@ -18,24 +18,21 @@ class CASViewAdManager: NSObject {
     }
     
     private let format: String
-    private var casId = ""
     weak var plugin: CASMobileAds?
+    
+    private var isHidden: Bool = false
     
     // banner
     private var bannerView: CASBannerView?
     
     // persist JS banner settings
     private var lastAdSizeString: String = "B"
-    private var lastMaxWidth: CGFloat = 320
-    private var lastMaxHeight: CGFloat = 50
+    private var lastMaxWidth: CGFloat? = nil
+    private var lastMaxHeight: CGFloat? = nil
+    
     private var lastAutoReload: Bool = true
     private var lastRefreshInterval: Int = 30
-
-    // in case show called before load
-    private var lastPositionIndex: Int = Position.bottomCenter.rawValue
-    private var lastOffsetX: Int = 0
-    private var lastOffsetY: Int = 0
-    
+        
     // constraints
     private var constraintX: NSLayoutConstraint?
     private var constraintY: NSLayoutConstraint?
@@ -47,9 +44,8 @@ class CASViewAdManager: NSObject {
     private var requiredRefreshSize: Bool = false
     private var isPortraitSupported: Bool = true
     
-    // callbacks
+    // callback
     private var pendingLoadCallbackId: String?
-    private var pendingShowCallbackId: String?
     
     
     // MARK: - Inits
@@ -66,52 +62,73 @@ class CASViewAdManager: NSObject {
     
     // MARK: - Public API
     
-    func setId(_ casId: String) {
-        self.casId = casId
+    /// Load MREC. command.arguments should be:
+    /// [ autoReload: Bool, refreshInterval: Int? ]
+    func initAndLoadMRECAd(_ command: CDVInvokedUrlCommand, casId: String, viewController: UIViewController?) {
+        let autoReload = command.arguments[0] as? Bool ?? true
+        let refreshInterval = command.arguments[1] as? Int ?? 30
+        
+        // Save JS parameters
+        lastAutoReload = autoReload
+        lastRefreshInterval = refreshInterval
+        
+        // Save callback
+        self.pendingLoadCallbackId = command.callbackId
+        
+        let adSize = AdSize.mediumRectangle
+        loadAd(adSize, casId: casId, viewController: viewController)
     }
     
-    /// Load banner. command.arguments should be:
+    /// Init and Load banner. command.arguments should be:
     /// [ adSizeString: String, maxWidth: Double?, maxHeight: Double?, autoReload: Bool?, refreshInterval: Int? ]
-    func loadBannerAd(_ callbackId: String, adSize: AdSize, adSizeString: String, autoReload: Bool, refreshInterval: Int, viewController: UIViewController?) {
+    func initAndLoadBannerAd(_ command: CDVInvokedUrlCommand, casId: String, viewController: UIViewController?) {
+        let adSizeString = command.arguments[0] as? String ?? "B"
+        let maxWidth = command.arguments[1] as? Double
+        let maxHeight = command.arguments[2] as? Double
+        let autoReload = command.arguments[3] as? Bool ?? true
+        let refreshInterval = command.arguments[4] as? Int ?? 30
+                                
         // Save JS parameters
         lastAdSizeString = adSizeString
         lastAutoReload = autoReload
         lastRefreshInterval = refreshInterval
-
-        self.pendingLoadCallbackId = callbackId
-
+        updateSizeLimits(maxWidth: maxWidth, maxHeight: maxHeight)
+        
+        // Save callback
+        self.pendingLoadCallbackId = command.callbackId
+        
+        let adSize = self.recalculateSize(for: adSizeString)
+        loadAd(adSize, casId: casId, viewController: viewController)
+    }
+    
+    /// Load banner. command.arguments should be:
+    /// [ adSize: AdSize, viewController: UIViewController? ]
+    func loadAd(_ adSize: AdSize, casId: String, viewController: UIViewController?) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let vc = viewController else { return }
-
-            // recalc screen limits
-            let screenWidth = UIScreen.main.bounds.width
-            let screenHeight = UIScreen.main.bounds.height
-            lastMaxWidth = min(lastMaxWidth, screenWidth)
-            lastMaxHeight = min(lastMaxHeight, screenHeight)
             
             // update properties (if exist)
             if let banner = self.bannerView {
+                banner.isAutoloadEnabled = lastAutoReload
+                banner.refreshInterval = lastRefreshInterval
+                banner.adSize = adSize
                 
-                banner.isAutoloadEnabled = autoReload
-                banner.refreshInterval = refreshInterval
-                banner.adSize = self.recalculateSize(for: adSize)
-
                 banner.loadAd()
                 return
             }
-
+            
             // Create Banner (if not exist)
-            let banner = CASBannerView(casID: self.casId, size: self.recalculateSize(for: adSize))
+            let banner = CASBannerView(casID: casId, size: adSize)
             banner.delegate = self
             banner.impressionDelegate = self
             banner.rootViewController = vc
-            banner.isAutoloadEnabled = autoReload
-            banner.refreshInterval = refreshInterval
-            banner.isHidden = true
+            banner.isAutoloadEnabled = lastAutoReload
+            banner.refreshInterval = lastRefreshInterval
+            banner.isHidden = isHidden
             banner.translatesAutoresizingMaskIntoConstraints = false
-
+            
             vc.view.addSubview(banner)
-
+            
             let safe = vc.view.safeAreaLayoutGuide
             NSLayoutConstraint.activate([
                 banner.topAnchor.constraint(greaterThanOrEqualTo: safe.topAnchor),
@@ -119,67 +136,58 @@ class CASViewAdManager: NSObject {
                 banner.leftAnchor.constraint(greaterThanOrEqualTo: safe.leftAnchor),
                 banner.rightAnchor.constraint(lessThanOrEqualTo: safe.rightAnchor),
             ])
-
+            
             self.bannerView = banner
-
+            
             // Orientation listener
             let supported = vc.supportedInterfaceOrientations
             self.isPortraitSupported = supported.contains(.portrait)
-
+            
             NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(self.orientationChangedNotification),
-                name: NSNotification.Name.UIDeviceOrientationDidChange,
+                name: UIDevice.orientationDidChangeNotification,
                 object: nil
             )
-
+            
             banner.loadAd()
         }
     }
-
+    
     
     /// Show banner (position, offsetX, offsetY optional)
     /// args: [ positionIndex: Int?, offsetX: Int?, offsetY: Int? ]
-    func showBannerAd(_ command: CDVInvokedUrlCommand, viewController: UIViewController?) {
+    func showBannerAd(_ command: CDVInvokedUrlCommand) {
         let posIndex = command.arguments.first as? Int ?? Position.bottomCenter.rawValue
         let offsetX = command.arguments.count > 1 ? (command.arguments[1] as? Int ?? 0) : 0
         let offsetY = command.arguments.count > 2 ? (command.arguments[2] as? Int ?? 0) : 0
-
-        // Save for later → required for workflow: show → load
-        lastPositionIndex = posIndex
-        lastOffsetX = offsetX
-        lastOffsetY = offsetY
-
-        self.pendingShowCallbackId = command.callbackId
-
+        
         guard let banner = self.bannerView else {
             // do NOT return error — show is allowed before load
             return
         }
-
+        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-
+            
             self.activePosition = Position(rawValue: posIndex) ?? .bottomCenter
             self.horizontalOffset = offsetX
             self.verticalOffset = offsetY
-
-            if banner.superview == nil {
-                viewController?.view.addSubview(banner)
-            }
-
+            
             self.refreshPosition()
+            self.isHidden = false
             banner.isHidden = false
         }
+        
+        plugin?.sendOk(command.callbackId)
     }
-
     
     func hideBannerAd(_ command: CDVInvokedUrlCommand?) {
         DispatchQueue.main.async {
+            self.isHidden = true
             self.bannerView?.isHidden = true
             if let callbackId = command?.callbackId {
-                let result = CDVPluginResult(status: CDVCommandStatus_OK)
-                self.plugin?.send(result, callbackId: callbackId)
+                self.plugin?.sendOk(callbackId)
             }
         }
     }
@@ -188,8 +196,7 @@ class CASViewAdManager: NSObject {
         DispatchQueue.main.async {
             self.destroy()
             if let callbackId = command?.callbackId {
-                let result = CDVPluginResult(status: CDVCommandStatus_OK)
-                self.plugin?.send(result, callbackId: callbackId)
+                self.plugin?.sendOk(callbackId)
             }
         }
     }
@@ -198,7 +205,7 @@ class CASViewAdManager: NSObject {
     // MARK: - Internals
     
     private func destroy() {
-        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+        NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
         
         if let bannerView {
             bannerView.removeFromSuperview()
@@ -211,9 +218,8 @@ class CASViewAdManager: NSObject {
         constraintY = nil
         
         pendingLoadCallbackId = nil
-        pendingShowCallbackId = nil
     }
-            
+    
     @objc private func orientationChangedNotification(_ notification: Notification) {
         // some sizes require recalculation when orientation changes
         guard let banner = bannerView else { return }
@@ -223,22 +229,46 @@ class CASViewAdManager: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             guard self.requiredRefreshSize else { return }
             self.requiredRefreshSize = false
-
-            banner.adSize = self.recalculateSize(for: banner.adSize)
-            self.refreshPosition()
+            banner.adSize = self.recalculateSize(for: self.lastAdSizeString)
         }
     }
     
-    private func recalculateSize(for size: AdSize) -> AdSize {
-        switch lastAdSizeString.uppercased() {
+    private func updateSizeLimits(maxWidth: Double?, maxHeight: Double?) {
+        let screenWidth = UIScreen.main.bounds.width
+        let screenHeight = UIScreen.main.bounds.height
+        
+        // For width
+        if let maxWidth {
+            lastMaxWidth = min(CGFloat(maxWidth), screenWidth)
+        } else {
+            lastMaxWidth = screenWidth
+        }
+        
+        // For height
+        if let maxHeight {
+            lastMaxHeight = min(CGFloat(maxHeight), screenHeight)
+        } else {
+            lastMaxHeight = screenHeight
+        }
+    }
+    
+    private func recalculateSize(for adSizeString: String) -> AdSize {
+        let width = lastMaxWidth ?? UIScreen.main.bounds.width
+        let height = lastMaxHeight ?? UIScreen.main.bounds.height
+        
+        switch adSizeString.uppercased() {
+        case "B":
+            return .banner
+        case "L":
+            return .leaderboard
         case "A":
-            return CASSize.getAdaptiveBanner(forMaxWidth: lastMaxWidth)
-
+            return .getAdaptiveBanner(forMaxWidth: width)
         case "I":
-            return CASSize.getInlineBanner(width: lastMaxWidth, maxHeight: lastMaxHeight)
-
+            return .getInlineBanner(width: width, maxHeight: height)
+        case "S":
+            return .getSmartBanner()
         default:
-            return size
+            return .banner
         }
     }
     
@@ -296,7 +326,7 @@ class CASViewAdManager: NSObject {
 
 extension CASViewAdManager: CASImpressionDelegate {
     public func adDidRecordImpression(info: AdContentInfo) {
-        plugin?.sendImpression(format: format, contentInfo: info)
+        plugin?.fireImpressionEvent(format: format, contentInfo: info)
     }
 }
 
@@ -305,26 +335,24 @@ extension CASViewAdManager: CASImpressionDelegate {
 
 extension CASViewAdManager: CASBannerDelegate {
     func bannerAdViewDidLoad(_ view: CASBannerView) {
-        plugin?.sendEvent(.casai_ad_loaded, format: format)
+        plugin?.fireEvent(.casai_ad_loaded, body: ["format": format])
         
         if let callbackId = self.pendingLoadCallbackId {
-            let result = CDVPluginResult(status: CDVCommandStatus_OK)
-            plugin?.send(result, callbackId: callbackId)
+            plugin?.sendOk(callbackId)
             self.pendingLoadCallbackId = nil
         }
     }
     
     func bannerAdView(_ adView: CASBannerView, didFailWith error: AdError) {
-        plugin?.sendError(.casai_ad_load_failed, format: format, error: error)
+        plugin?.fireErrorEvent(.casai_ad_load_failed, format: format, error: error)
         
         if let callbackId = self.pendingLoadCallbackId {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: error.errorDescription)
-            plugin?.send(result, callbackId: callbackId)
+            self.plugin?.sendErrorEvent(callbackId, format: format, error: error)
             self.pendingLoadCallbackId = nil
         }
     }
     
     func bannerAdViewDidRecordClick(_ adView: CASBannerView) {
-        plugin?.sendEvent(.casai_ad_clicked, format: format)
+        plugin?.fireEvent(.casai_ad_clicked, body: ["format": format])
     }
 }

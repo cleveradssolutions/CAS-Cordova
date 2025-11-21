@@ -6,9 +6,9 @@ class CASScreenAdManager: NSObject {
     // MARK: - Properties
     
     let format: String
-    var casId: String = ""
     weak var plugin: CASMobileAds?
     
+    private var isUserEarnReward = false
     private var adContent: CASScreenContent?
     
     private var pendingLoadCallbackId: String?
@@ -18,7 +18,7 @@ class CASScreenAdManager: NSObject {
     // MARK: - Inits
     
     init(format: AdFormat) {
-        self.format = format.label
+        self.format = format.label        
     }
     
     deinit {
@@ -28,57 +28,40 @@ class CASScreenAdManager: NSObject {
     
     // MARK: - Methods
     
-    func setId(_ casId: String) {
-        self.casId = casId
-    }
-    
-    func loadAd(callbackId: String, autoload: Bool, autoshow: Bool?, minInterval: Int?) {
-        let ad: CASScreenContent
-        
-        switch format {
-        case AdFormat.interstitial.label:
-            let inter = CASInterstitial(casID: casId)
-            if let autoshow {
-                inter.isAutoshowEnabled = autoshow
-            }
-            if let minInterval {
-                inter.minInterval = minInterval
-            }
-            ad = inter
-        case AdFormat.rewarded.label:
-            ad = CASRewarded(casID: casId)
-        case AdFormat.appOpen.label:
-            let appOpen = CASAppOpen(casID: casId)
-            if let autoshow {
-                appOpen.isAutoshowEnabled = autoshow
-            }
-            ad = appOpen
-            
-        default:
-            return
-        }
-        
+    func loadAd(_ callbackId: String, ad: CASScreenContent) {
         // Setup delegates
         ad.delegate = self
         ad.impressionDelegate = self
         
-        // Setup properties
-        ad.isAutoloadEnabled = autoload
+        if pendingLoadCallbackId != nil {
+            var body: [String: Any] = [:]
+            body["format"] = format
+            body["code"] = 499
+            body["message"] = "Load Promise interrupted by new load call"
+            
+            plugin?.fireEvent(.casai_ad_load_failed, body: body)
+            return
+        }
         
         pendingLoadCallbackId = callbackId
+        isUserEarnReward = false
         adContent = ad
         
         ad.loadAd()
     }
-    
+   
+    func getAd() -> CASScreenContent? {
+        return adContent
+    }
+   
     func showAd(_ callbackId: String, controller: UIViewController?) {
         guard let ad = adContent else {
-            sendErrorToCallback(callbackId, message: AdError.notReady.errorDescription)
+            plugin?.sendError(callbackId, AdError.notReady.errorDescription)
             return
         }
         
         guard ad.isAdLoaded else {
-            sendErrorToCallback(callbackId, message: AdError.notReady.errorDescription)
+            plugin?.sendError(callbackId, AdError.notReady.errorDescription)
             return
         }
         
@@ -87,7 +70,7 @@ class CASScreenAdManager: NSObject {
         // Present depending on type
         if let rewarded = ad as? CASRewarded {
             rewarded.present(from: controller) { _ in
-                self.plugin?.sendEvent(.casai_ad_reward, format: ad.contentInfo?.format.label ?? "")
+                self.isUserEarnReward = true
             }
             
         } else if let interstitial = ad as? CASInterstitial {
@@ -100,23 +83,13 @@ class CASScreenAdManager: NSObject {
     
     func isAdLoaded(_ callbackId: String) {
         let isLoaded = adContent?.isAdLoaded ?? false
-        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: isLoaded)
-        plugin?.send(result, callbackId: callbackId)
+        plugin?.sendOk(callbackId, isLoaded)
     }
         
     func destroyAd(_ callbackId: String) {
         adContent?.destroy()
         adContent = nil
-        let result = CDVPluginResult(status: CDVCommandStatus_OK)
-        plugin?.send(result, callbackId: callbackId)
-    }
-    
-    
-    // MARK: - Helper
-    
-    private func sendErrorToCallback(_ callbackId: String, message: String?) {
-        let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: message)
-        plugin?.send(result, callbackId: callbackId)
+        plugin?.sendOk(callbackId)
     }
 }
 
@@ -125,7 +98,7 @@ class CASScreenAdManager: NSObject {
 
 extension CASScreenAdManager: CASImpressionDelegate {
     func adDidRecordImpression(info: AdContentInfo) {
-        plugin?.sendImpression(format: format, contentInfo: info)
+        plugin?.fireImpressionEvent(format: format, contentInfo: info)
     }
 }
 
@@ -134,48 +107,50 @@ extension CASScreenAdManager: CASImpressionDelegate {
 
 extension CASScreenAdManager: CASScreenContentDelegate {
     func screenAdDidLoadContent(_ ad: any CASScreenContent) {
-        plugin?.sendEvent(.casai_ad_loaded, format: format)
+        plugin?.fireEvent(.casai_ad_loaded, body: ["format": format])
         
         if let callbackId = self.pendingLoadCallbackId {
-            let result = CDVPluginResult(status: CDVCommandStatus_OK)
-            self.plugin?.send(result, callbackId: callbackId)
+            self.plugin?.sendOk(callbackId)
             self.pendingLoadCallbackId = nil
         }
     }
     
     func screenAd(_ ad: any CASScreenContent, didFailToLoadWithError error: AdError) {
-        plugin?.sendError(.casai_ad_load_failed, format: format, error: error)
+        plugin?.fireErrorEvent(.casai_ad_load_failed, format: format, error: error)
         
         if let callbackId = self.pendingLoadCallbackId {
-            self.sendErrorToCallback(callbackId, message: error.errorDescription)
+            self.plugin?.sendErrorEvent(callbackId, format: format, error: error)
             self.pendingLoadCallbackId = nil
         }
     }
     
     func screenAdWillPresentContent(_ ad: any CASScreenContent) {
-        plugin?.sendEvent(.casai_ad_showed, format: format)
+        plugin?.fireEvent(.casai_ad_showed, body: ["format": format])
         
         if let callbackId = self.pendingShowCallbackId {
-            let result = CDVPluginResult(status: CDVCommandStatus_OK)
-            self.plugin?.send(result, callbackId: callbackId)
+            self.plugin?.sendOk(callbackId)
             self.pendingShowCallbackId = nil
         }
     }
     
     func screenAd(_ ad: any CASScreenContent, didFailToPresentWithError error: AdError) {
-        plugin?.sendError(.casai_ad_show_failed, format: format, error: error)
+        plugin?.fireErrorEvent(.casai_ad_show_failed, format: format, error: error)
         
         if let callbackId = self.pendingShowCallbackId {
-            self.sendErrorToCallback(callbackId, message: error.errorDescription)
+            self.plugin?.sendErrorEvent(callbackId, format: format, error: error)
             self.pendingShowCallbackId = nil
         }
     }
     
     func screenAdDidClickContent(_ ad: any CASScreenContent) {
-        plugin?.sendEvent(.casai_ad_clicked, format: format)
+        plugin?.fireEvent(.casai_ad_clicked, body: ["format": format])
     }
     
     func screenAdDidDismissContent(_ ad: any CASScreenContent) {
-        plugin?.sendEvent(.casai_ad_dismissed, format: format)
+        plugin?.fireEvent(.casai_ad_dismissed, body: ["format": format])
+        
+        if isUserEarnReward {
+            plugin?.fireEvent(.casai_ad_reward)
+        }
     }
 }
