@@ -11,7 +11,7 @@ route('#/menu', function (root) {
         console.log('Consent flow finished');
       })
       .catch(function (e) {
-        console.log('Consent flow failed: ' + (e && e.message));
+        console.log('Consent flow failed: ' + e.message);
       });
   }
 

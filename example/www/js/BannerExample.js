@@ -5,12 +5,15 @@ route('#/banner', function (root) {
 
   function onBannerLoadClicked() {
     casai.bannerAd
-      .load({ adSize: casai.Size.SMART, autoReload: false, refreshInterval: 30 })
+      .load({
+        adSize: casai.Size.SMART,
+        autoReload: true,
+      })
       .then(function () {
         console.log('Banner Ad loaded');
       })
       .catch(function (e) {
-        console.log('Banner Ad failed to load: ' + (e && e.message));
+        console.log('Banner Ad failed to load: ' + e.message);
       });
   }
 
@@ -29,7 +32,7 @@ route('#/banner', function (root) {
     console.log('Banner Ad destroy()');
   }
 
-  function onBannerPositionClicked(btn) {
+  function onBannerPositionChanged(btn) {
     currentPos = casai.Position[btn.dataset.pos];
     console.log('Banner position ->', btn.dataset.pos, currentPos);
     casai.bannerAd.show({ position: currentPos });
@@ -42,7 +45,7 @@ route('#/banner', function (root) {
 
   root.querySelectorAll('.pos').forEach(function (btn) {
     btn.onclick = function () {
-      onBannerPositionClicked(btn);
+      onBannerPositionChanged(btn);
     };
   });
 });

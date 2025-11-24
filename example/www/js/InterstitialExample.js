@@ -3,12 +3,15 @@ route('#/interstitial', function (root) {
 
   function onInterstitialLoadClicked() {
     casai.interstitialAd
-      .load({ autoReload: false, autoShow: false, minInterval: 0 })
+      .load({
+        autoReload: true,
+        autoShow: false,
+      })
       .then(function () {
         console.log('Interstitial Ad loaded');
       })
       .catch(function (e) {
-        console.log('Interstitial Ad failed to load: ' + (e && e.message));
+        console.log('Interstitial Ad failed to load: ' + e.message);
       });
   }
   function onInterstitialShowClicked() {
@@ -18,11 +21,11 @@ route('#/interstitial', function (root) {
         console.log('Interstitial Ad closed');
       })
       .catch(function (e) {
-        console.log('Interstitial Ad failed to show: ' + (e && e.message));
+        console.log('Interstitial Ad failed to show: ' + e.message);
       });
   }
   function onInterstitialDestroyClicked() {
-    casai.interstitialAd.destroy && casai.interstitialAd.destroy();
+    casai.interstitialAd.destroy();
     console.log('Interstitial Ad destroy()');
   }
 

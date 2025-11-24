@@ -6,13 +6,12 @@ route('#/adaptive', function (root) {
       .load({
         adSize: casai.Size.ADAPTIVE,
         autoReload: true,
-        refreshInterval: 30,
       })
       .then(function () {
         console.log('Adaptive Banner Ad loaded');
       })
       .catch(function (e) {
-        console.log('Adaptive Banner Ad failed to load: ' + (e && e.message));
+        console.log('Adaptive Banner Ad failed to load: ' + e.message);
       });
   }
 

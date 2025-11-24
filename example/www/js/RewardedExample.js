@@ -3,26 +3,29 @@ route('#/rewarded', function (root) {
 
   function onRewardedLoadClicked() {
     casai.rewardedAd
-      .load({ autoReload: false })
+      .load({ autoReload: true })
       .then(function () {
         console.log('Rewarded Ad loaded');
       })
       .catch(function (e) {
-        console.log('Rewarded Ad failed to load: ' + (e && e.message));
+        console.log('Rewarded Ad failed to load: ' + e.message);
       });
   }
   function onRewardedShowClicked() {
     casai.rewardedAd
       .show()
-      .then(function () {
+      .then(function (info) {
+        if (info.isUserEarnReward) {
+          console.log('User earn reward');
+        }
         console.log('Rewarded Ad closed');
       })
       .catch(function (e) {
-        console.log('Rewarded Ad failed to show: ' + (e && e.message));
+        console.log('Rewarded Ad failed to show: ' + e.message);
       });
   }
   function onRewardedDestroyClicked() {
-    casai.rewardedAd.destroy && casai.rewardedAd.destroy();
+    casai.rewardedAd.destroy();
     console.log('Rewarded Ad destroy()');
   }
 

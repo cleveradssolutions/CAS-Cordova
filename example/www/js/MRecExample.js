@@ -3,16 +3,21 @@ route('#/mrec', function (root) {
 
   function onMrecLoadClicked() {
     casai.mrecAd
-      .load({ autoReload: false, refreshInterval: 30 })
+      .load({
+        autoReload: true,
+        refreshInterval: 0, // 0 for disable refrsh ad
+      })
       .then(function () {
         console.log('MREC Ad loaded');
       })
       .catch(function (e) {
-        console.log('MREC Ad failed to load: ' + (e && e.message));
+        console.log('MREC Ad failed to load: ' + e.message);
       });
   }
   function onMrecShowClicked() {
-    casai.mrecAd.show({ position: casai.Position.MIDDLE_CENTER });
+    casai.mrecAd.show({
+      position: casai.Position.MIDDLE_CENTER,
+    });
     console.log('MREC Ad show()');
   }
   function onMrecHideClicked() {

@@ -3,12 +3,15 @@ route('#/appopen', function (root) {
 
   function onAppOpenLoadClicked() {
     casai.appOpenAd
-      .load({ autoReload: false, autoShow: false })
+      .load({
+        autoReload: true,
+        autoShow: true,
+      })
       .then(function () {
         console.log('AppOpen Ad loaded');
       })
       .catch(function (e) {
-        console.log('AppOpen Ad failed to load: ' + (e && e.message));
+        console.log('AppOpen Ad failed to load: ' + e.message);
       });
   }
   function onAppOpenShowClicked() {
@@ -18,11 +21,11 @@ route('#/appopen', function (root) {
         console.log('AppOpen Ad closed');
       })
       .catch(function (e) {
-        console.log('AppOpen Ad failed to show: ' + (e && e.message));
+        console.log('AppOpen Ad failed to show: ' + e.message);
       });
   }
   function onAppOpenDestroyClicked() {
-    casai.appOpenAd.destroy && casai.appOpenAd.destroy();
+    casai.appOpenAd.destroy();
     console.log('AppOpen Ad destroy()');
   }
 
