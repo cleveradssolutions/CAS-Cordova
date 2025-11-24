@@ -519,7 +519,7 @@ extension CASMobileAds {
     func sendError(_ callbackId: String?, format: String, error: AdError) {
         let body: [String: Any] = [
             "format": format,
-            "code": error.code,
+            "code": error.code.rawValue,
             "message": error.description,
         ]
         let result = CDVPluginResult(
@@ -566,7 +566,7 @@ extension CASMobileAds {
     func fireErrorEvent(_ name: CASEvent, format: String, error: AdError) {
         let body: [String: Any] = [
             "format": format,
-            "code": error.code,
+            "code": error.code.rawValue,
             "message": error.errorDescription ?? "",
         ]
         fireDocumentEvent(name.rawValue, body: body)
