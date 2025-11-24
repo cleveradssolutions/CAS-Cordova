@@ -47,7 +47,7 @@ interface AppOpenAd {
   /**
    * Shows a previously loaded App Open ad.
    *
-   * @returns A Promise that resolves after the ad is dismissed, 
+   * @returns A Promise that resolves after the ad is dismissed,
    * or rejects with an error if the ad fails to show.
    * @example
    * ```ts
@@ -125,7 +125,7 @@ interface InterstitialAd {
   /**
    * Shows a previously loaded Interstitial ad.
    *
-   * @returns A Promise that resolves after the ad is dismissed, 
+   * @returns A Promise that resolves after the ad is dismissed,
    * or rejects with an error if the ad fails to show.
    * @example
    * ```ts
@@ -160,7 +160,7 @@ interface RewardedAd {
    * @param options Configuration options for the App Open ad.
    * @returns A Promise that resolves when the ad is is successfully loaded,
    * or rejects with an error if the ad fails to load.
-   * 
+   *
    * @example
    * ```ts
    * .load()

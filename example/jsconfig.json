@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "checkJs": true,
-    "baseUrl": ".",
+    "checkJs": false,
+    "baseUrl": "./www/js",
     "typeRoots": [
       "./plugins/cordova-plugin-casai/types",
       "./node_modules/@types"
     ]
   },
-  "include": ["www/**/*.js"]
+  "include": ["**/*.js"]
 }

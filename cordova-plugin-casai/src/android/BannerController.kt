@@ -1,11 +1,18 @@
 package com.cleveradssolutions.plugin.cordova
 
+import android.graphics.Color
 import android.os.Build
+import android.util.DisplayMetrics
 import android.view.DisplayCutout
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.view.WindowInsets
+import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.annotation.MainThread
+import androidx.core.util.TypedValueCompat.pxToDp
+import com.cleveradssolutions.sdk.AdContentInfo
 import com.cleveradssolutions.sdk.AdFormat
 import com.cleveradssolutions.sdk.OnAdImpressionListener
 import com.cleveradssolutions.sdk.base.CASHandler
@@ -14,147 +21,214 @@ import com.cleversolutions.ads.AdSize
 import com.cleversolutions.ads.AdViewListener
 import com.cleversolutions.ads.android.CASBannerView
 import org.apache.cordova.CallbackContext
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.roundToInt
+
+internal object BannerPosition {
+    const val TOP_CENTER = 0
+    const val TOP_LEFT = 1
+    const val TOP_RIGHT = 2
+    const val BOTTOM_CENTER = 3
+    const val BOTTOM_LEFT = 4
+    const val BOTTOM_RIGHT = 5
+    const val MIDDLE_CENTER = 6
+    const val MIDDLE_LEFT = 7
+    const val MIDDLE_RIGHT = 8
+}
+
 
 class BannerController(
     private val plugin: CASMobileAds,
-    private val host: FrameLayout
-) : AdViewListener {
+    private val adFormat: AdFormat
+) : AdViewListener, OnAdImpressionListener {
 
     private var bannerView: CASBannerView? = null
-    private var pendingLoadPromise: CallbackContext? = null
 
-    private var pendingShowPos: Int? = null
-    private var isLoadedOnce: Boolean = false
-    
+    private val isVisible = AtomicBoolean(false)
+    private var desiredPosition: Int = BannerPosition.BOTTOM_CENTER
     private var offsetXdp: Int = 0
     private var offsetYdp: Int = 0
+    private var pendingLoadPromise: CallbackContext? = null
+
+    private var sizeCode: String? = null
+    private var maxWdp: Int = 0
+    private var maxHdp: Int = 0
+
+    private val showTask = Runnable {
+        bannerView?.let {
+            it.layoutParams = buildLayoutParamsForCurrentState(it)
+            it.visibility = View.VISIBLE
+        }
+    }
+
+    private val hideTask =Runnable {
+        bannerView?.visibility = View.GONE
+    }
+
+    private fun rejectPendingLoadIfAny() {
+        pendingLoadPromise?.let { old ->
+            old.error(plugin.cancelledLoadError(adFormat))
+            pendingLoadPromise = null
+        }
+    }
 
     fun loadBanner(
+        sizeCode: String,
         casId: String,
         adSize: AdSize,
+        maxWdp: Int,
+        maxHdp: Int,
         autoload: Boolean,
         refreshSeconds: Int,
         promise: CallbackContext
     ) {
+        rejectPendingLoadIfAny()
+
         pendingLoadPromise = promise
+        this.sizeCode = sizeCode
+        this.maxWdp = maxWdp
+        this.maxHdp = maxHdp
 
-        val view = (bannerView ?: CASBannerView(plugin.activity).also { created ->
-            bannerView = created
-            created.casId = casId
-            created.onImpressionListener = ScreenImpressionProxy(plugin, AdFormat.BANNER)
-            created.adListener = this
-        })
-
-        view.isAutoloadEnabled = autoload
-        view.refreshInterval = refreshSeconds
-        view.size = adSize
-
-        isLoadedOnce = false
-
-        CASHandler.main {
-            if (view.parent != host) {
-                host.addView(
-                    view,
-                    FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.WRAP_CONTENT,
-                        FrameLayout.LayoutParams.WRAP_CONTENT
-                    ).apply { gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL }
-                )
-                host.bringToFront()
-            }
-            view.visibility = View.GONE
+        val view = bannerView ?: CASBannerView(plugin.activity).apply {
+            adListener = this@BannerController
+            onImpressionListener = this@BannerController
+            bannerView = this
         }
 
-        view.load()
+        CASHandler.main {
+            view.casId = casId
+            view.isAutoloadEnabled = autoload
+            view.refreshInterval = refreshSeconds
+            view.size = adSize
+            view.setBackgroundColor(Color.TRANSPARENT);
+            view.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+
+            val layoutParams = buildLayoutParamsForCurrentState(view)
+            if (view.parent == null) {
+                plugin.activity.addContentView(view, layoutParams)
+            } else {
+                view.layoutParams = layoutParams
+            }
+
+            view.visibility = if (isVisible.get()) View.VISIBLE else View.GONE
+        }
     }
-    
+
+
     fun show(position: Int, offsetXdp: Int, offsetYdp: Int) {
-        pendingShowPos = position
+        desiredPosition = position
         this.offsetXdp = offsetXdp
         this.offsetYdp = offsetYdp
-
-        val view = bannerView ?: return
-        CASHandler.main {
-            if (isLoadedOnce) {
-                host.bringToFront()
-                view.visibility = View.VISIBLE
-                view.post { refreshViewPosition(view, position) }
-                pendingShowPos = null
-            }
-        }
+        isVisible.set(true)
+        CASHandler.main(showTask)
     }
 
     fun hide() {
-        pendingShowPos = null
-        CASHandler.main { bannerView?.visibility = View.GONE }
+        isVisible.set(false)
+        CASHandler.main(hideTask)
     }
 
     fun destroy() {
         val view = bannerView ?: return
         CASHandler.main {
-            host.removeView(view)
             view.destroy()
+            (view.parent as? ViewGroup)?.removeView(view)
         }
         bannerView = null
+        isVisible.set(false)
         pendingLoadPromise = null
-        pendingShowPos = null
-        isLoadedOnce = false
-        offsetXdp = 0
-        offsetYdp = 0
     }
 
     override fun onAdViewLoaded(view: CASBannerView) {
-        isLoadedOnce = true
-        plugin.emitEvent(PluginEvents.LOADED, adInfoJson(AdFormat.BANNER))
+        view.layoutParams = buildLayoutParamsForCurrentState(view)
+
+        plugin.emitEvent(PluginEvents.LOADED, plugin.adInfoJson(adFormat))
         pendingLoadPromise?.success()
         pendingLoadPromise = null
-
-        val pos = pendingShowPos
-        CASHandler.main {
-            if (pos != null) {
-                host.bringToFront()
-                view.visibility = View.VISIBLE
-                view.post { refreshViewPosition(view, pos) } 
-                pendingShowPos = null
-            } else {
-                view.visibility = View.GONE
-            }
-        }
     }
 
     override fun onAdViewFailed(view: CASBannerView, error: AdError) {
-        plugin.emitEvent(PluginEvents.LOAD_FAILED, errorJson(AdFormat.BANNER, error))
-        pendingLoadPromise?.error(errorJson(AdFormat.BANNER, error).toString())
+        val payload = plugin.errorJson(adFormat, error)
+        plugin.emitEvent(PluginEvents.LOAD_FAILED, payload)
+        pendingLoadPromise?.error(payload.toString())
         pendingLoadPromise = null
     }
 
     override fun onAdViewClicked(view: CASBannerView) {
-        plugin.emitEvent(PluginEvents.CLICKED, adInfoJson(AdFormat.BANNER))
+        plugin.emitEvent(PluginEvents.CLICKED, plugin.adInfoJson(adFormat))
+    }
+
+    override fun onAdImpression(ad: AdContentInfo) {
+        plugin.emitEvent(PluginEvents.IMPRESSIONS, plugin.adContentToJson(adFormat, ad))
+    }
+
+    fun onConfigurationChanged() {
+        val bannerView = this@BannerController.bannerView ?: return
+        val code = sizeCode ?: return
+        if (code == "A" || code == "I") {
+            val newSize = resolveAdSize(code, maxWdp, maxHdp)
+            CASHandler.main {
+                bannerView.size = newSize
+            }
+        }
+    }
+
+    fun resolveAdSize(sizeCode: String, maxWdp: Int, maxHdp: Int): AdSize {
+        val (screenWdp, screenHdp) = getScreenDp()
+        val w = if (maxWdp > 0) maxWdp.coerceAtMost(screenWdp) else screenWdp
+        val h = if (maxHdp > 0) maxHdp.coerceAtMost(screenHdp) else screenHdp
+
+        return when (sizeCode) {
+            "B" -> AdSize.BANNER
+            "L" -> AdSize.LEADERBOARD
+            "M" -> AdSize.MEDIUM_RECTANGLE
+            "S" -> AdSize.getSmartBanner(plugin.activity)
+            "A" -> AdSize.getAdaptiveBanner(plugin.activity, w)
+            "I" -> AdSize.getInlineBanner(w, h)
+            else -> AdSize.BANNER
+        }
+    }
+
+    private fun getScreenDp(): Pair<Int, Int> {
+        val windowManager = plugin.activity.getSystemService(WindowManager::class.java)
+        val displayMetrics = plugin.activity.resources.displayMetrics
+
+        val widthPx: Int
+        val heightPx: Int
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val metrics = windowManager.currentWindowMetrics
+            val bounds = metrics.bounds
+            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            widthPx  = bounds.width()  - insets.left - insets.right
+            heightPx = bounds.height() - insets.top  - insets.bottom
+        } else {
+            val display = plugin.activity.windowManager.defaultDisplay
+            val tmp = DisplayMetrics()
+            display.getMetrics(tmp)
+            widthPx = tmp.widthPixels
+            heightPx = tmp.heightPixels
+        }
+
+        val wDp = pxToDp(widthPx.toFloat(), displayMetrics).toInt()
+        val hDp = pxToDp(heightPx.toFloat(), displayMetrics).toInt()
+        return wDp to hDp
     }
 
     @MainThread
-    private fun refreshViewPosition(view: CASBannerView, position: Int) {
-        val activity = plugin.activity
-
+    private fun buildLayoutParamsForCurrentState(view: CASBannerView): FrameLayout.LayoutParams {
         val params = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.WRAP_CONTENT,
             FrameLayout.LayoutParams.WRAP_CONTENT
         )
 
-        val adWidthPx: Int
-        val adHeightPx: Int
-        if (view.measuredWidth == 0) {
-            val size = view.size
-            adWidthPx = size.widthPixels(activity)
-            adHeightPx = size.heightPixels(activity)
-        } else {
-            adWidthPx = view.measuredWidth
-            adHeightPx = view.measuredHeight
-        }
+        val density = plugin.activity.resources.displayMetrics.density
+        val offXpx = (offsetXdp * density).roundToInt()
+        val offYpx = (offsetYdp * density).roundToInt()
 
-        val decor = activity.window.decorView
-        val screenWidth = decor.width
-        val screenHeight = decor.height
+        val decor = plugin.activity.window.decorView
+        val screenW = decor.width
+        val screenH = decor.height
 
         var safeLeft = 0; var safeTop = 0; var safeRight = 0; var safeBottom = 0
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -167,22 +241,21 @@ class BannerController(
             }
         }
 
-        fun clamp(v: Int, min: Int, max: Int) = v.coerceIn(min, max)
-        
-        val density = activity.resources.displayMetrics.density
-        val offXpx = (offsetXdp * density).toInt()
-        val offYpx = (offsetYdp * density).toInt()
+        val adW = if (view.measuredWidth == 0) view.size.widthPixels(plugin.activity) else view.measuredWidth
+        val adH = if (view.measuredHeight == 0) view.size.heightPixels(plugin.activity) else view.measuredHeight
 
-        when (position) {
-            0, 1, 2 -> {
+        fun clamp(v: Int, min: Int, max: Int) = v.coerceIn(min, max)
+
+        when (desiredPosition) {
+            BannerPosition.TOP_CENTER, BannerPosition.TOP_LEFT, BannerPosition.TOP_RIGHT -> {
                 params.gravity = Gravity.TOP
-                params.topMargin = clamp(safeTop + offYpx, safeTop, screenHeight - safeBottom - adHeightPx)
+                params.topMargin = clamp(safeTop + offYpx, safeTop, screenH - safeBottom - adH)
             }
-            3, 4, 5 -> {
+            BannerPosition.BOTTOM_CENTER, BannerPosition.BOTTOM_LEFT, BannerPosition.BOTTOM_RIGHT -> {
                 params.gravity = Gravity.BOTTOM
-                params.bottomMargin = clamp(safeBottom + offYpx, safeBottom, screenHeight - safeTop - adHeightPx)
+                params.bottomMargin = clamp(safeBottom + offYpx, safeBottom, screenH - safeTop - adH)
             }
-            6, 7, 8 -> {
+            BannerPosition.MIDDLE_CENTER, BannerPosition.MIDDLE_LEFT, BannerPosition.MIDDLE_RIGHT -> {
                 params.gravity = Gravity.CENTER_VERTICAL
                 params.topMargin = offYpx
             }
@@ -192,30 +265,20 @@ class BannerController(
             }
         }
 
-        when (position) {
-            1, 4, 7 -> {
+        when (desiredPosition) {
+            BannerPosition.TOP_LEFT, BannerPosition.BOTTOM_LEFT, BannerPosition.MIDDLE_LEFT -> {
                 params.gravity = params.gravity or Gravity.START
-                params.leftMargin = clamp(safeLeft + offXpx, safeLeft, screenWidth - safeRight - adWidthPx)
+                params.leftMargin = clamp(safeLeft + offXpx, safeLeft, screenW - safeRight - adW)
             }
-            2, 5, 8 -> {
+            BannerPosition.TOP_RIGHT, BannerPosition.BOTTOM_RIGHT, BannerPosition.MIDDLE_RIGHT -> {
                 params.gravity = params.gravity or Gravity.END
-                params.rightMargin = clamp(safeRight + offXpx, safeRight, screenWidth - safeLeft - adWidthPx)
+                params.rightMargin = clamp(safeRight + offXpx, safeRight, screenW - safeLeft - adW)
             }
             else -> {
                 params.gravity = params.gravity or Gravity.CENTER_HORIZONTAL
             }
         }
 
-        view.layoutParams = params
-    }
-
-    private class ScreenImpressionProxy(
-        private val plugin: CASMobileAds,
-        private val adFormat: AdFormat
-    ) : OnAdImpressionListener {
-        override fun onAdImpression(ad: com.cleveradssolutions.sdk.AdContentInfo) {
-            plugin.emitEvent(PluginEvents.IMPRESSIONS, adContentToJson(adFormat, ad))
-        }
+        return params
     }
 }
-
