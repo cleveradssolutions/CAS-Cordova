@@ -1,43 +1,32 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width"
-    />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width" />
     <title>CAS Cordova Demo</title>
     <link rel="stylesheet" href="css/app.css" />
   </head>
   <body>
-    <!-- Setup -->
-    <template id="tmpl-setup">
-      <div class="card">
-        <div class="title">Initialize CAS</div>
-      </div>
-    </template>
-
     <!-- Menu -->
     <template id="tmpl-menu">
       <div class="card">
-      <div class="title">Examples</div>
-      <p class="subtitle">Choose an ad format to test</p>
+        <div class="title">Examples</div>
+        <p class="subtitle">Choose an ad format to test</p>
 
-      <button class="btn" data-go="#/interstitial">Interstitial</button>
-      <button class="btn" data-go="#/rewarded">Rewarded</button>
-      <button class="btn" data-go="#/appopen">App Open</button>
+        <button class="btn" data-go="#/interstitial">Interstitial</button>
+        <button class="btn" data-go="#/rewarded">Rewarded</button>
+        <button class="btn" data-go="#/appopen">App Open</button>
 
-      <div class="divider"></div>
+        <div class="divider"></div>
 
-      <button class="btn" data-go="#/banner">Banner (AdView)</button>
-      <button class="btn" data-go="#/mrec">MREC (AdView)</button>
-      <button class="btn" data-go="#/adaptive">Adaptive (AdView)</button>
+        <button class="btn" data-go="#/banner">Banner (AdView)</button>
+        <button class="btn" data-go="#/mrec">MREC (AdView)</button>
+        <button class="btn" data-go="#/adaptive">Adaptive (AdView)</button>
 
-      <div class="divider"></div>
-      <button id="btnConsent" class="btn">Show Consent (if required)</button>
+        <div class="divider"></div>
+        <button id="btnConsent" class="btn">Show Consent (if required)</button>
       </div>
     </template>
-
 
     <!-- Banner -->
     <template id="tmpl-banner">
@@ -106,12 +95,11 @@
     <template id="tmpl-interstitial">
       <div class="card">
         <div class="title">Interstitial</div>
-
         <div class="grid-2">
           <button id="iLoad" class="btn">Load</button>
           <button id="iShow" class="btn">Show</button>
+          <button id="iDestroy" class="btn">Destroy</button>
         </div>
-
         <div class="divider"></div>
         <button class="btn" onclick="location.hash='#/menu'">Back</button>
       </div>
@@ -121,12 +109,11 @@
     <template id="tmpl-rewarded">
       <div class="card">
         <div class="title">Rewarded</div>
-
         <div class="grid-2">
           <button id="rLoad" class="btn">Load</button>
           <button id="rShow" class="btn">Show</button>
+          <button id="rDestroy" class="btn">Destroy</button>
         </div>
-
         <div class="divider"></div>
         <button class="btn" onclick="location.hash='#/menu'">Back</button>
       </div>
@@ -136,12 +123,11 @@
     <template id="tmpl-appopen">
       <div class="card">
         <div class="title">App Open</div>
-
         <div class="grid-2">
           <button id="oLoad" class="btn">Load</button>
           <button id="oShow" class="btn">Show</button>
+          <button id="oDestroy" class="btn">Destroy</button>
         </div>
-
         <div class="divider"></div>
         <button class="btn" onclick="location.hash='#/menu'">Back</button>
       </div>
@@ -161,7 +147,6 @@
     <script src="js/App.js"></script>
 
     <!-- Screens -->
-    <script src="js/screens/Setup.js"></script>
     <script src="js/screens/Menu.js"></script>
     <script src="js/screens/BannerExample.js"></script>
     <script src="js/screens/MRecExample.js"></script>

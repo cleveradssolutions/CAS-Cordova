@@ -111,6 +111,8 @@ class BannerController(
             }
 
             view.visibility = if (isVisible.get()) View.VISIBLE else View.GONE
+
+            if (!autoload) view.load()
         }
     }
 

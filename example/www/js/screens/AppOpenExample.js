@@ -1,18 +1,32 @@
 route('#/appopen', function (root) {
   renderTemplate('tmpl-appopen', root);
-  var cas = window.casai;
 
-  function onAppOpenLoad() {
-    cas.appOpenAd.load({ autoReload: false, autoShow: false })
-      .then(function (info) { console.log('AppOpen load()', info); })
-      .catch(function (e) { console.log('AppOpen load() failed', e); });
+  function onAppOpenLoadClicked() {
+    casai.appOpenAd
+      .load({ autoReload: false, autoShow: false })
+      .then(function () {
+        console.log('AppOpen Ad loaded');
+      })
+      .catch(function (e) {
+        console.log('AppOpen Ad failed to load: ' + (e && e.message));
+      });
   }
-  function onAppOpenShow() {
-    cas.appOpenAd.show()
-      .then(function (info) { console.log('AppOpen closed', info); })
-      .catch(function (e) { console.log('AppOpen show() failed', e); });
+  function onAppOpenShowClicked() {
+    casai.appOpenAd
+      .show()
+      .then(function () {
+        console.log('AppOpen Ad closed');
+      })
+      .catch(function (e) {
+        console.log('AppOpen Ad failed to show: ' + (e && e.message));
+      });
+  }
+  function onAppOpenDestroyClicked() {
+    casai.appOpenAd.destroy && casai.appOpenAd.destroy();
+    console.log('AppOpen Ad destroy()');
   }
 
-  document.getElementById('oLoad').onclick = onAppOpenLoad;
-  document.getElementById('oShow').onclick = onAppOpenShow;
+  document.getElementById('oLoad').onclick = onAppOpenLoadClicked;
+  document.getElementById('oShow').onclick = onAppOpenShowClicked;
+  document.getElementById('oDestroy').onclick = onAppOpenDestroyClicked;
 });
