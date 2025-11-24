@@ -18,10 +18,9 @@ enum CASEvent: String {
 
 @objc(CASMobileAds)
 class CASMobileAds: CDVPlugin {
-
     // MARK: - Properties
 
-    private var casId: String = ""
+    private(set) var casId: String = ""
     private var initResponse: [String: Any] = [:]
 
     private var mrecManager: CASViewAdManager
@@ -32,11 +31,11 @@ class CASMobileAds: CDVPlugin {
     private var appOpenManager: CASScreenAdManager
 
     override init() {
-        self.mrecManager = CASViewAdManager(format: .mediumRectangle)
-        self.bannerManager = CASViewAdManager(format: .banner)
-        self.interstitialManager = CASScreenAdManager(format: .interstitial)
-        self.rewardedManager = CASScreenAdManager(format: .rewarded)
-        self.appOpenManager = CASScreenAdManager(format: .appOpen)
+        mrecManager = CASViewAdManager(format: .mediumRectangle)
+        bannerManager = CASViewAdManager(format: .banner)
+        interstitialManager = CASScreenAdManager(format: .interstitial)
+        rewardedManager = CASScreenAdManager(format: .rewarded)
+        appOpenManager = CASScreenAdManager(format: .appOpen)
     }
 
     /// Called after plugin construction and fields have been initialized.
@@ -46,7 +45,7 @@ class CASMobileAds: CDVPlugin {
         if let id = Bundle.main.object(
             forInfoDictionaryKey: "CASAIAppIdentifier"
         ) as? String {
-            self.casId = id
+            casId = id
         }
 
         mrecManager.plugin = self
@@ -72,16 +71,16 @@ class CASMobileAds: CDVPlugin {
         let targetAudience = command.arguments[0] as? String ?? ""
         let showConsentForm = command.arguments[1] as? Bool ?? true
         let forceTestAds = command.arguments[2] as? Bool ?? false
-        let testDeviceIds = command.arguments[3] as? [String] ?? []
-        let debugGeography = command.arguments[4] as? String ?? "eea"
-        let mediationExtras = command.arguments[5] as? [String: Any] ?? [:]
+        let testDeviceIds = command.arguments[3] as? [String]
+        let debugGeography = command.arguments[4] as? String ?? ""
+        let mediationExtras = command.arguments[5] as? [String: Any]
 
         if !initResponse.isEmpty {
             let result = CDVPluginResult(
                 status: CDVCommandStatus_OK,
                 messageAs: initResponse
             )
-            self.commandDelegate?.send(result, callbackId: callbackId)
+            commandDelegate?.send(result, callbackId: callbackId)
             return
         }
 
@@ -89,7 +88,7 @@ class CASMobileAds: CDVPlugin {
         consentFlow.isEnabled = showConsentForm
         consentFlow.forceTesting = forceTestAds
 
-        if !testDeviceIds.isEmpty {
+        if let testDeviceIds, !testDeviceIds.isEmpty {
             CAS.settings.setTestDevice(ids: testDeviceIds)
         }
 
@@ -98,8 +97,7 @@ class CASMobileAds: CDVPlugin {
             CAS.settings.taggedAudience = .children
         case "notchildren":
             CAS.settings.taggedAudience = .notChildren
-        default:
-            break
+        default: break
         }
 
         switch debugGeography.lowercased() {
@@ -109,17 +107,18 @@ class CASMobileAds: CDVPlugin {
             consentFlow.debugGeography = .regulatedUSState
         case "unregulated":
             consentFlow.debugGeography = .other
-        default:
-            consentFlow.debugGeography = .disabled
+        default: break
         }
 
         let builder = CAS.buildManager()
             .withTestAdMode(forceTestAds)
             .withConsentFlow(consentFlow)
 
-        for (key, value) in mediationExtras {
-            if let strValue = value as? String {
-                builder.withMediationExtras(strValue, forKey: key)
+        if let mediationExtras {
+            for (key, value) in mediationExtras {
+                if let strValue = value as? String {
+                    builder.withMediationExtras(strValue, forKey: key)
+                }
             }
         }
 
@@ -150,19 +149,23 @@ class CASMobileAds: CDVPlugin {
         let ifRequired = command.arguments[0] as? Bool ?? true
         let debugGeographyValue = command.arguments[1] as? Int ?? 0
 
-        let debugGeography =
-            CASConsentFlow.DebugGeography(rawValue: debugGeographyValue)
-            ?? .disabled
-
         let consentFlow = CASConsentFlow(isEnabled: true)
-            .withDebugGeography(debugGeography)
-            .withViewControllerToPresent(self.viewController)
+            .withViewControllerToPresent(viewController)
             .withCompletionHandler { status in
                 self.sendOk(
                     command.callbackId,
                     messageAs: self.getConsentFlowStatus(from: status)
                 )
             }
+
+        if let debugGeography = CASConsentFlow.DebugGeography(
+            rawValue: debugGeographyValue
+        ),
+            debugGeography != .disabled
+        {
+            consentFlow.withDebugGeography(debugGeography)
+            consentFlow.withForceTesting(true)
+        }
 
         if ifRequired {
             consentFlow.presentIfRequired()
@@ -204,8 +207,8 @@ class CASMobileAds: CDVPlugin {
         guard let genderInt = command.argument(at: 0) as? Int else { return }
         if let gender = Gender(rawValue: genderInt) {
             CAS.targetingOptions.gender = gender
-            sendOk(command.callbackId)
         }
+        sendOk(command.callbackId)
     }
 
     @objc func setAppKeywords(_ command: CDVInvokedUrlCommand) {
@@ -240,6 +243,8 @@ class CASMobileAds: CDVPlugin {
 
     // MARK: - Banner Ad
 
+    /// Init and Load banner. command.arguments should be:
+    /// [ adSizeString: String, maxWidth: Double?, maxHeight: Double?, autoReload: Bool?, refreshInterval: Int? ]
     @objc func loadBannerAd(_ command: CDVInvokedUrlCommand) {
         // nativePromise('loadBannerAd', [
         // adSize,
@@ -248,10 +253,21 @@ class CASMobileAds: CDVPlugin {
         // autoReload ?? true,
         // refreshInterval ?? 30,
         // ]);
-        bannerManager.initAndLoadBannerAd(
-            command,
-            casId: casId,
-            viewController: self.viewController
+        let adSizeString = command.arguments[0] as? String ?? "S"
+        let maxWidth = command.arguments[1] as? Double
+        let maxHeight = command.arguments[2] as? Double
+        let autoReload = command.arguments[3] as? Bool ?? true
+        let refreshInterval = command.arguments[4] as? Int ?? 30
+
+        bannerManager.loadAd(
+            bannerManager.resolveAdSize(
+                adSizeString,
+                maxWidth: maxWidth,
+                maxHeight: maxHeight
+            ),
+            autoReload: autoReload,
+            refreshInterval: refreshInterval,
+            callbackId: command.callbackId
         )
     }
 
@@ -274,10 +290,14 @@ class CASMobileAds: CDVPlugin {
 
     @objc func loadMRecAd(_ command: CDVInvokedUrlCommand) {
         // nativePromise('loadMRecAd', [autoReload ?? true, refreshInterval ?? 30]);
-        mrecManager.initAndLoadMRECAd(
-            command,
-            casId: casId,
-            viewController: self.viewController
+        let autoReload = command.arguments[0] as? Bool ?? true
+        let refreshInterval = command.arguments[1] as? Int ?? 30
+
+        mrecManager.loadAd(
+            AdSize.mediumRectangle,
+            autoReload: autoReload,
+            refreshInterval: refreshInterval,
+            callbackId: command.callbackId
         )
     }
 
@@ -327,7 +347,7 @@ class CASMobileAds: CDVPlugin {
         // nativeCall('showAppOpenAd', []);
         appOpenManager.showAd(
             command.callbackId,
-            controller: self.viewController
+            controller: viewController
         )
     }
 
@@ -370,7 +390,7 @@ class CASMobileAds: CDVPlugin {
         // nativeCall('showInterstitialAd', []);
         interstitialManager.showAd(
             command.callbackId,
-            controller: self.viewController
+            controller: viewController
         )
     }
 
@@ -407,7 +427,7 @@ class CASMobileAds: CDVPlugin {
         // nativeCall('showRewardedAd', []);
         rewardedManager.showAd(
             command.callbackId,
-            controller: self.viewController
+            controller: viewController
         )
     }
 
@@ -420,7 +440,7 @@ class CASMobileAds: CDVPlugin {
 // MARK: - Additional Methods
 
 extension CASMobileAds {
-    @objc func getConsentFlowStatus(from model: ConsentFlowStatus) -> String {
+    func getConsentFlowStatus(from model: ConsentFlowStatus) -> String {
         let message: String
         switch model {
         case .unknown:
@@ -500,7 +520,7 @@ extension CASMobileAds {
         let body: [String: Any] = [
             "format": format,
             "code": error.code,
-            "message": error.errorDescription ?? "",
+            "message": error.description,
         ]
         let result = CDVPluginResult(
             status: CDVCommandStatus_ERROR,
@@ -509,7 +529,11 @@ extension CASMobileAds {
         commandDelegate?.send(result, callbackId: callbackId)
     }
 
-    func fireEvent(_ name: CASEvent, body: [String: Any] = [:]) {
+    func fireEvent(_ name: CASEvent, format: String) {
+        fireDocumentEvent(name.rawValue, body: ["format": format])
+    }
+
+    func fireEvent(_ name: CASEvent, body: [String: Any]) {
         fireDocumentEvent(name.rawValue, body: body)
     }
 
@@ -522,9 +546,7 @@ extension CASMobileAds {
             revenuePrecision = "precise"
         case .floor:
             revenuePrecision = "floor"
-        case .unknown:
-            revenuePrecision = "unknown"
-        @unknown default:
+        default:
             revenuePrecision = "unknown"
         }
 
@@ -551,17 +573,17 @@ extension CASMobileAds {
     }
 
     private func fireDocumentEvent(_ name: String, body: [String: Any]) {
-        DispatchQueue.main.async {
-            var jsonBody = "{}"
-            if let data = try? JSONSerialization.data(
-                withJSONObject: body,
-                options: []
-            ),
-                let jsonString = String(data: data, encoding: .utf8)
-            {
-                jsonBody = jsonString
-            }
+        var jsonBody = "{}"
+        if let data = try? JSONSerialization.data(
+            withJSONObject: body,
+            options: []
+        ),
+            let jsonString = String(data: data, encoding: .utf8)
+        {
+            jsonBody = jsonString
+        }
 
+        DispatchQueue.main.async {
             let js = "cordova.fireDocumentEvent('\(name)', \(jsonBody));"
             self.commandDelegate?.evalJs(js)
         }

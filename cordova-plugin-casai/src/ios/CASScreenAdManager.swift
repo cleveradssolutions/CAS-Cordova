@@ -106,7 +106,7 @@ extension CASScreenAdManager: CASImpressionDelegate {
 
 extension CASScreenAdManager: CASScreenContentDelegate {
     func screenAdDidLoadContent(_ ad: any CASScreenContent) {
-        plugin?.fireEvent(.casai_ad_loaded, body: ["format": format])
+        plugin?.fireEvent(.casai_ad_loaded, format: format)
 
         if let callbackId = pendingLoadCallbackId {
             plugin?.sendOk(callbackId)
@@ -131,7 +131,7 @@ extension CASScreenAdManager: CASScreenContentDelegate {
     }
 
     func screenAdWillPresentContent(_ ad: any CASScreenContent) {
-        plugin?.fireEvent(.casai_ad_showed, body: ["format": format])
+        plugin?.fireEvent(.casai_ad_showed, format: format)
     }
 
     func screenAd(
@@ -151,15 +151,15 @@ extension CASScreenAdManager: CASScreenContentDelegate {
     }
 
     func screenAdDidClickContent(_ ad: any CASScreenContent) {
-        plugin?.fireEvent(.casai_ad_clicked, body: ["format": format])
+        plugin?.fireEvent(.casai_ad_clicked, format: format)
     }
 
     func screenAdDidDismissContent(_ ad: any CASScreenContent) {
         if isUserEarnReward {
-            plugin?.fireEvent(.casai_ad_reward)
+            plugin?.fireEvent(.casai_ad_reward, format: format)
         }
 
-        plugin?.fireEvent(.casai_ad_dismissed, body: ["format": format])
+        plugin?.fireEvent(.casai_ad_dismissed, format: format)
 
         if let callbackId = pendingShowCallbackId {
             if ad is CASRewarded {
