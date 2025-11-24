@@ -82,6 +82,8 @@
             </feature>
         </config-file>
         <source-file src="src/ios/CASMobileAds.swift" />
+        <source-file src="src/ios/CASScreenAdManager.swift" />
+        <source-file src="src/ios/CASViewAdManager.swift" />
         <podspec>
             <config>
                 <source url="https://github.com/CocoaPods/Specs.git"/>

@@ -88,7 +88,7 @@ def update_kotlin_file(js_funcs):
     print("✅ CASMobileAds.kt")
 
 def update_swift_file(js_funcs):
-    kotlin_file = Path('cordova-plugin-casai/src/ios/CASCMobileAds.swift')
+    kotlin_file = Path('cordova-plugin-casai/src/ios/CASMobileAds.swift')
     text = kotlin_file.read_text(encoding="utf-8")
 
     pattern = r'@objc\s+func\s+([a-zA-Z_][a-zA-Z0-9_]*)\(_ command: CDVInvokedUrlCommand\)'
@@ -111,7 +111,7 @@ def update_swift_file(js_funcs):
         new_text = text[:close_index] + "\n".join(lines) + "\n" + text[close_index:]
         kotlin_file.write_text(new_text, encoding="utf-8")
 
-    print("✅ CASCMobileAds.swift")
+    print("✅ CASMobileAds.swift")
 
 def update_proxy_file(js_funcs):
     kotlin_file = Path('cordova-plugin-casai/src/browser/casaiproxy.js')

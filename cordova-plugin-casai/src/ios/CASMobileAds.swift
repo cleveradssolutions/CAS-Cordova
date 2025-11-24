@@ -1,185 +1,250 @@
 import CleverAdsSolutions
+import Foundation
+
+enum CASEvent: String {
+    case casai_ad_loaded
+    case casai_ad_showed
+
+    case casai_ad_load_failed
+    case casai_ad_show_failed
+
+    case casai_ad_impressions
+
+    case casai_ad_clicked
+    case casai_ad_dismissed
+
+    case casai_ad_reward
+}
 
 @objc(CASMobileAds)
 class CASMobileAds: CDVPlugin {
-    
     // MARK: - Properties
-    
-    private var casId: String?
-    private var manager: CASMediationManager?
-    
-    // AdFormats
-    private var mrecView: CASBannerView?
-    private var bannerView: CASBannerView?
-    
-    private var appOpenAd: CASAppOpen?
-    private var interstitialAd: CASInterstitial?
-    private var rewardedAd: CASRewarded?
-    
-    
+
+    private(set) var casId: String = ""
+    private var initResponse: [String: Any] = [:]
+
+    private var mrecManager: CASViewAdManager
+    private var bannerManager: CASViewAdManager
+
+    private var interstitialManager: CASScreenAdManager
+    private var rewardedManager: CASScreenAdManager
+    private var appOpenManager: CASScreenAdManager
+
+    override init() {
+        mrecManager = CASViewAdManager(format: .mediumRectangle)
+        bannerManager = CASViewAdManager(format: .banner)
+        interstitialManager = CASScreenAdManager(format: .interstitial)
+        rewardedManager = CASScreenAdManager(format: .rewarded)
+        appOpenManager = CASScreenAdManager(format: .appOpen)
+    }
+
     /// Called after plugin construction and fields have been initialized.
     override func pluginInitialize() {
         super.pluginInitialize()
+
+        if let id = Bundle.main.object(
+            forInfoDictionaryKey: "CASAIAppIdentifier"
+        ) as? String {
+            casId = id
+        }
+
+        mrecManager.plugin = self
+        bannerManager.plugin = self
+        interstitialManager.plugin = self
+        rewardedManager.plugin = self
+        appOpenManager.plugin = self
     }
-    
+
+    // MARK: - Init
+
     @objc func initialize(_ command: CDVInvokedUrlCommand) {
         // nativePromise('initialize', [
-        // /* 0 */ cordova.version,
-        // /* 1 */ casIdForAndroid ?? '',
-        // /* 2 */ casIdForIOS ?? '',
-        // /* 3 */ targetAudience,
-        // /* 4 */ showConsentFormIfRequired ?? true,
-        // /* 5 */ forceTestAds ?? false,
-        // /* 6 */ testDeviceIds ?? [],
-        // /* 7 */ debugGeography ?? 'eea',
-        // /* 8 */ mediationExtras ?? {}
-        
-        guard let args = command.arguments, args.count >= 9 else {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid arguments count")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
+        // /* 0 */ targetAudience,
+        // /* 1 */ showConsentFormIfRequired ?? true,
+        // /* 2 */ forceTestAds ?? false,
+        // /* 3 */ testDeviceIds ?? [],
+        // /* 4 */ debugGeography ?? 'eea',
+        // /* 5 */ mediationExtras ?? {}
+
+        var callbackId: String? = command.callbackId
+
+        let targetAudience = command.arguments[0] as? String ?? ""
+        let showConsentForm = command.arguments[1] as? Bool ?? true
+        let forceTestAds = command.arguments[2] as? Bool ?? false
+        let testDeviceIds = command.arguments[3] as? [String]
+        let debugGeography = command.arguments[4] as? String ?? ""
+        let mediationExtras = command.arguments[5] as? [String: Any]
+
+        if !initResponse.isEmpty {
+            let result = CDVPluginResult(
+                status: CDVCommandStatus_OK,
+                messageAs: initResponse
+            )
+            commandDelegate?.send(result, callbackId: callbackId)
             return
         }
-        
-        let casIdForIOS = args[2] as? String ?? ""
-        let targetAudience = args[3] as? Int ?? 0
-        let showConsentForm = args[4] as? Bool ?? true
-        let forceTestAds = args[5] as? Bool ?? false
-        let testDeviceIds = args[6] as? [String] ?? []
-        let debugGeography = args[7] as? String ?? "eea"
-        let mediationExtras = args[8] as? [String: Any] ?? [:]
-        
-        CAS.targetingOptions.age = targetAudience
-        
-        let builder = CAS.buildManager().withTestAdMode(forceTestAds)
-        let consentFlow = ConsentFlow(isEnabled: showConsentForm)
-        builder.withConsentFlow(consentFlow)
-        
-        // Test devices
-        if !testDeviceIds.isEmpty {
+
+        let consentFlow = CASConsentFlow()
+        consentFlow.isEnabled = showConsentForm
+        consentFlow.forceTesting = forceTestAds
+
+        if let testDeviceIds, !testDeviceIds.isEmpty {
             CAS.settings.setTestDevice(ids: testDeviceIds)
         }
-        
-        // Debug mode if needed
-        CAS.settings.debugMode = (debugGeography == "debug")
-        
-        self.casId = casIdForIOS
-        self.manager = builder.create(withCasId: casIdForIOS)
-        
-        print("CAS SDK initialized successfully with CAS ID \(casIdForIOS)")
-        
-        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "CAS Initialized")
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+
+        switch targetAudience.lowercased() {
+        case "children":
+            CAS.settings.taggedAudience = .children
+        case "notchildren":
+            CAS.settings.taggedAudience = .notChildren
+        default: break
+        }
+
+        switch debugGeography.lowercased() {
+        case "eea":
+            consentFlow.debugGeography = .EEA
+        case "us":
+            consentFlow.debugGeography = .regulatedUSState
+        case "unregulated":
+            consentFlow.debugGeography = .other
+        default: break
+        }
+
+        let builder = CAS.buildManager()
+            .withTestAdMode(forceTestAds)
+            .withConsentFlow(consentFlow)
+
+        if let mediationExtras {
+            for (key, value) in mediationExtras {
+                if let strValue = value as? String {
+                    builder.withMediationExtras(strValue, forKey: key)
+                }
+            }
+        }
+
+        builder.withCompletionHandler { config in
+            self.initResponse["error"] = config.error
+            self.initResponse["countryCode"] = config.countryCode
+            self.initResponse["isConsentRequired"] = config.isConsentRequired
+            self.initResponse["consentFlowStatus"] = self.getConsentFlowStatus(
+                from: config.consentFlowStatus
+            )
+
+            if let id = callbackId {
+                let result = CDVPluginResult(
+                    status: CDVCommandStatus_OK,
+                    messageAs: self.initResponse
+                )
+                self.commandDelegate?.send(result, callbackId: id)
+                callbackId = nil
+            }
+        }
+        .create(withCasId: casId)
     }
-    
+
+    // MARK: - ConsentFlow
+
     @objc func showConsentFlow(_ command: CDVInvokedUrlCommand) {
         // nativePromise('showConsentFlow', [ifRequired, debugGeography]);
-        guard let args = command.arguments, args.count >= 2 else {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid arguments")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-            return
-        }
-        
-        let ifRequired = args[0] as? Bool ?? true
-        let debugGeographyValue = args[1] as? Int ?? 0
-        
-        let debugGeography = CASConsentFlow.DebugGeography(rawValue: debugGeographyValue) ?? .disabled
-        
+        let ifRequired = command.arguments[0] as? Bool ?? true
+        let debugGeographyValue = command.arguments[1] as? Int ?? 0
+
         let consentFlow = CASConsentFlow(isEnabled: true)
-            .withDebugGeography(debugGeography)
-            .withViewControllerToPresent(self.viewController)
+            .withViewControllerToPresent(viewController)
             .withCompletionHandler { status in
-                var message = "Consent flow completed with status \(status.rawValue)"
-                switch status {
-                case .unknown:
-                    message = "User consent unknown"
-                case .obtained:
-                    message = "User consent obtained. Personalized vs non-personalized undefined"
-                case .notRequired:
-                    message = "User consent not required."
-                case .unavailable:
-                    message = "User consent unavailable."
-                case .internalError:
-                    message = "There was an internal error."
-                case .networkError:
-                    message = "There was an error loading data from the network."
-                case .viewControllerInvalid:
-                    message = "There was an error with the UI context is passed in."
-                case .flowStillPresenting:
-                    message = "There was an error with another form is still being displayed."
-                @unknown default:
-                    break
-                }
-                
-                let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: message)
-                self.commandDelegate.send(result, callbackId: command.callbackId)
+                self.sendOk(
+                    command.callbackId,
+                    messageAs: self.getConsentFlowStatus(from: status)
+                )
             }
-        
+
+        if let debugGeography = CASConsentFlow.DebugGeography(
+            rawValue: debugGeographyValue
+        ),
+            debugGeography != .disabled
+        {
+            consentFlow.withDebugGeography(debugGeography)
+            consentFlow.withForceTesting(true)
+        }
+
         if ifRequired {
             consentFlow.presentIfRequired()
         } else {
             consentFlow.present()
         }
     }
-    
-    
+
+    // MARK: - Additional Methods
+
     @objc func getSDKVersion(_ command: CDVInvokedUrlCommand) {
         // nativePromise('getSDKVersion');
-        let version = CAS.getSDKVersion()
-        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: version)
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        sendOk(command.callbackId, messageAs: CAS.getSDKVersion())
     }
-    
+
     @objc func setDebugLoggingEnabled(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setDebugLoggingEnabled', [enabled]);
         guard let enabled = command.argument(at: 0) as? Bool else { return }
         CAS.settings.debugMode = enabled
+        sendOk(command.callbackId)
     }
-    
+
     @objc func setAdSoundsMuted(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setAdSoundsMuted', [muted]);
         guard let muted = command.argument(at: 0) as? Bool else { return }
         CAS.settings.mutedAdSounds = muted
+        sendOk(command.callbackId)
     }
-    
+
     @objc func setUserAge(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setUserAge', [age]);
         guard let age = command.argument(at: 0) as? Int else { return }
         CAS.targetingOptions.age = age
-        
+        sendOk(command.callbackId)
     }
-    
+
     @objc func setUserGender(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setUserGender', [gender]);
         guard let genderInt = command.argument(at: 0) as? Int else { return }
         if let gender = Gender(rawValue: genderInt) {
             CAS.targetingOptions.gender = gender
         }
+        sendOk(command.callbackId)
     }
-    
+
     @objc func setAppKeywords(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setAppKeywords', [keywords]);
-        guard let keywords = command.argument(at: 0) as? [String] else { return }
+        guard let keywords = command.argument(at: 0) as? [String] else {
+            return
+        }
         CAS.targetingOptions.keywords = keywords
+        sendOk(command.callbackId)
     }
-    
+
     @objc func setAppContentUrl(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setAppContentUrl', [contentUrl]);
         guard let url = command.argument(at: 0) as? String else { return }
         CAS.targetingOptions.contentUrl = url
+        sendOk(command.callbackId)
     }
-    
+
     @objc func setLocationCollectionEnabled(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setLocationCollectionEnabled', [enabled]);
         guard let enabled = command.argument(at: 0) as? Bool else { return }
         CAS.targetingOptions.locationCollectionEnabled = enabled
+        sendOk(command.callbackId)
     }
-    
+
     @objc func setTrialAdFreeInterval(_ command: CDVInvokedUrlCommand) {
         // nativeCall('setTrialAdFreeInterval', [interval]);
         guard let interval = command.argument(at: 0) as? UInt64 else { return }
         CAS.settings.trialAdFreeInterval = interval
+        sendOk(command.callbackId)
     }
-    
+
+    // MARK: - Banner Ad
+
+    /// Init and Load banner. command.arguments should be:
+    /// [ adSizeString: String, maxWidth: Double?, maxHeight: Double?, autoReload: Bool?, refreshInterval: Int? ]
     @objc func loadBannerAd(_ command: CDVInvokedUrlCommand) {
         // nativePromise('loadBannerAd', [
         // adSize,
@@ -188,578 +253,339 @@ class CASMobileAds: CDVPlugin {
         // autoReload ?? true,
         // refreshInterval ?? 30,
         // ]);
-        
-        guard let args = command.arguments, args.count >= 5 else {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid banner arguments")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-            return
-        }
-        
-        let adSizeString = args[0] as? String ?? "B"
-        let maxWidth = args[1] as? Double ?? 320
-        let maxHeight = args[2] as? Double ?? 50
-        let autoReload = args[3] as? Bool ?? true
-        let refreshInterval = args[4] as? Int ?? 30
-        
-        var adSize = CASSize.banner
-        switch adSizeString.uppercased() {
-        case "B":
-            adSize = CASSize.banner
-        case "L":
-            adSize = CASSize.leaderboard
-        case "A":
-            adSize = CASSize.getAdaptiveBanner(forMaxWidth: maxWidth)
-        case "I":
-            adSize = CASSize.getInlineBanner(width: maxWidth, maxHeight: maxHeight)
-        case "S":
-            adSize = CASSize.getSmartBanner()
-        default:
-            break
-        }
-        
-        DispatchQueue.main.async {
-            guard let vc = self.viewController else { return }
-            let banner = CASBannerView(casID: self.casId ?? "", size: adSize)
-            
-            banner.delegate = self
-            banner.impressionDelegate = self
-            
-            banner.rootViewController = vc
-            banner.isAutoloadEnabled = autoReload
-            banner.refreshInterval = refreshInterval
-            
-            self.bannerView = banner
-            banner.loadAd()
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Banner loading started")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        let adSizeString = command.arguments[0] as? String ?? "S"
+        let maxWidth = command.arguments[1] as? Double
+        let maxHeight = command.arguments[2] as? Double
+        let autoReload = command.arguments[3] as? Bool ?? true
+        let refreshInterval = command.arguments[4] as? Int ?? 30
+
+        bannerManager.loadAd(
+            bannerManager.resolveAdSize(
+                adSizeString,
+                maxWidth: maxWidth,
+                maxHeight: maxHeight
+            ),
+            autoReload: autoReload,
+            refreshInterval: refreshInterval,
+            callbackId: command.callbackId
+        )
     }
-    
+
     @objc func showBannerAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('showBannerAd', [position]);
-        guard let banner = self.bannerView else { return }
-        let positionIndex = command.arguments.first as? Int ?? 0 // Default: TOP_CENTER
-        
-        DispatchQueue.main.async {
-            guard let vc = self.viewController else { return }
-            banner.removeFromSuperview()
-            vc.view.addSubview(banner)
-            banner.translatesAutoresizingMaskIntoConstraints = false
-            
-            let safe = vc.view.safeAreaLayoutGuide
-            
-            var constraints: [NSLayoutConstraint] = []
-            
-            switch positionIndex {
-            case 0: // TOP_CENTER
-                constraints = [
-                    banner.topAnchor.constraint(equalTo: safe.topAnchor),
-                    banner.centerXAnchor.constraint(equalTo: safe.centerXAnchor)
-                ]
-            case 1: // TOP_LEFT
-                constraints = [
-                    banner.topAnchor.constraint(equalTo: safe.topAnchor),
-                    banner.leadingAnchor.constraint(equalTo: safe.leadingAnchor)
-                ]
-            case 2: // TOP_RIGHT
-                constraints = [
-                    banner.topAnchor.constraint(equalTo: safe.topAnchor),
-                    banner.trailingAnchor.constraint(equalTo: safe.trailingAnchor)
-                ]
-            case 3: // BOTTOM_CENTER
-                constraints = [
-                    banner.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
-                    banner.centerXAnchor.constraint(equalTo: safe.centerXAnchor)
-                ]
-            case 4: // BOTTOM_LEFT
-                constraints = [
-                    banner.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
-                    banner.leadingAnchor.constraint(equalTo: safe.leadingAnchor)
-                ]
-            case 5: // BOTTOM_RIGHT
-                constraints = [
-                    banner.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
-                    banner.trailingAnchor.constraint(equalTo: safe.trailingAnchor)
-                ]
-            case 6: // MIDDLE_CENTER
-                constraints = [
-                    banner.centerXAnchor.constraint(equalTo: safe.centerXAnchor),
-                    banner.centerYAnchor.constraint(equalTo: safe.centerYAnchor)
-                ]
-            case 7: // MIDDLE_LEFT
-                constraints = [
-                    banner.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
-                    banner.leadingAnchor.constraint(equalTo: safe.leadingAnchor)
-                ]
-            case 8: // MIDDLE_RIGHT
-                constraints = [
-                    banner.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
-                    banner.trailingAnchor.constraint(equalTo: safe.trailingAnchor)
-                ]
-            default:
-                constraints = [
-                    banner.topAnchor.constraint(equalTo: safe.topAnchor),
-                    banner.centerXAnchor.constraint(equalTo: safe.centerXAnchor)
-                ]
-            }
-            
-            NSLayoutConstraint.activate(constraints)
-            banner.isHidden = false
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Banner viewed")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        bannerManager.showBannerAd(command)
     }
-    
-    
+
     @objc func hideBannerAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('hideBannerAd', []);
-        DispatchQueue.main.async {
-            self.bannerView?.isHidden = true
-        }
+        bannerManager.hideBannerAd(command)
     }
-    
+
     @objc func destroyBannerAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('destroyBannerAd', []);
-        DispatchQueue.main.async {
-            self.bannerView?.destroy()
-            self.bannerView?.removeFromSuperview()
-            self.bannerView = nil
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Banner destroyed")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        bannerManager.destroyBannerAd(command)
     }
-    
+
+    // MARK: - MREC Ad
+
     @objc func loadMRecAd(_ command: CDVInvokedUrlCommand) {
         // nativePromise('loadMRecAd', [autoReload ?? true, refreshInterval ?? 30]);
-        guard let args = command.arguments, args.count >= 2 else {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid MREC arguments")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-            return
-        }
-        
-        let autoReload = args[0] as? Bool ?? true
-        let refreshInterval = args[1] as? Int ?? 30
-        
-        DispatchQueue.main.async {
-            guard let vc = self.viewController else { return }
-            let banner = CASBannerView(casID: self.casId ?? "", size: .mediumRectangle)
-            banner.delegate = self
-            banner.impressionDelegate = self
-            
-            banner.rootViewController = vc
-            banner.isAutoloadEnabled = autoReload
-            banner.refreshInterval = refreshInterval
-            
-            self.mrecView = banner
-            banner.loadAd()
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "MREC loading started")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        let autoReload = command.arguments[0] as? Bool ?? true
+        let refreshInterval = command.arguments[1] as? Int ?? 30
+
+        mrecManager.loadAd(
+            AdSize.mediumRectangle,
+            autoReload: autoReload,
+            refreshInterval: refreshInterval,
+            callbackId: command.callbackId
+        )
     }
-    
+
     @objc func showMRecAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('showMRecAd', [position]);
-        guard let mrec = self.mrecView else { return }
-        let positionIndex = command.arguments.first as? Int ?? 0 // Default: TOP_CENTER
-        
-        DispatchQueue.main.async {
-            guard let vc = self.viewController else { return }
-            mrec.removeFromSuperview()
-            vc.view.addSubview(mrec)
-            mrec.translatesAutoresizingMaskIntoConstraints = false
-            
-            let safe = vc.view.safeAreaLayoutGuide
-            var constraints: [NSLayoutConstraint] = []
-            
-            switch positionIndex {
-            case 0: // TOP_CENTER
-                constraints = [
-                    mrec.topAnchor.constraint(equalTo: safe.topAnchor),
-                    mrec.centerXAnchor.constraint(equalTo: safe.centerXAnchor)
-                ]
-            case 1: // TOP_LEFT
-                constraints = [
-                    mrec.topAnchor.constraint(equalTo: safe.topAnchor),
-                    mrec.leadingAnchor.constraint(equalTo: safe.leadingAnchor)
-                ]
-            case 2: // TOP_RIGHT
-                constraints = [
-                    mrec.topAnchor.constraint(equalTo: safe.topAnchor),
-                    mrec.trailingAnchor.constraint(equalTo: safe.trailingAnchor)
-                ]
-            case 3: // BOTTOM_CENTER
-                constraints = [
-                    mrec.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
-                    mrec.centerXAnchor.constraint(equalTo: safe.centerXAnchor)
-                ]
-            case 4: // BOTTOM_LEFT
-                constraints = [
-                    mrec.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
-                    mrec.leadingAnchor.constraint(equalTo: safe.leadingAnchor)
-                ]
-            case 5: // BOTTOM_RIGHT
-                constraints = [
-                    mrec.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
-                    mrec.trailingAnchor.constraint(equalTo: safe.trailingAnchor)
-                ]
-            case 6: // MIDDLE_CENTER
-                constraints = [
-                    mrec.topAnchor.constraint(equalTo: safe.topAnchor),
-                    mrec.centerXAnchor.constraint(equalTo: safe.centerXAnchor)
-                ]
-            case 7: // MIDDLE_LEFT
-                constraints = [
-                    mrec.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
-                    mrec.leadingAnchor.constraint(equalTo: safe.leadingAnchor)
-                ]
-            case 8: // MIDDLE_RIGHT
-                constraints = [
-                    mrec.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
-                    mrec.trailingAnchor.constraint(equalTo: safe.trailingAnchor)
-                ]
-            default: // MIDDLE_CENTER
-                constraints = [
-                    mrec.topAnchor.constraint(equalTo: safe.topAnchor),
-                    mrec.centerXAnchor.constraint(equalTo: safe.centerXAnchor)
-                ]
-            }
-            
-            NSLayoutConstraint.activate(constraints)
-            mrec.isHidden = false
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "MREC viewed")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        mrecManager.showBannerAd(command)
     }
-    
-    
+
     @objc func hideMRecAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('hideMRecAd', []);
-        DispatchQueue.main.async {
-            self.mrecView?.isHidden = true
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "MREC hidden")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        mrecManager.hideBannerAd(command)
     }
-    
+
     @objc func destroyMRecAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('destroyMRecAd', []);
-        DispatchQueue.main.async {
-            self.mrecView?.destroy()
-            self.mrecView?.removeFromSuperview()
-            self.mrecView = nil
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "MREC destroyed")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        mrecManager.destroyBannerAd(command)
     }
-    
+
+    // MARK: - App Open Ad
+
     @objc func loadAppOpenAd(_ command: CDVInvokedUrlCommand) {
         // nativePromise('loadAppOpenAd', [autoReload ?? false, autoShow ?? false]);
-        guard let args = command.arguments, args.count >= 2 else {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid AppOpen arguments")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-            return
+        let appOpen: CASAppOpen
+        if let ad = interstitialManager.getAd() as? CASAppOpen {
+            appOpen = ad
+        } else {
+            appOpen = CASAppOpen(casID: casId)
         }
-        
-        let autoReload = args[0] as? Bool ?? false
-        let autoShow = args[1] as? Bool ?? false
-        
-        DispatchQueue.main.async {
-            self.appOpenAd = CASAppOpen(casID: self.casId ?? "")
-            guard let ad = self.appOpenAd else { return }
-            
-            ad.delegate = self
-            ad.impressionDelegate = self
-            
-            ad.isAutoloadEnabled = autoReload
-            ad.isAutoshowEnabled = autoShow
-            
-            ad.loadAd()
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "AppOpen Loading started")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
+
+        if let isAutoshowEnabled = command.arguments[1] as? Bool {
+            appOpen.isAutoshowEnabled = isAutoshowEnabled
         }
+
+        appOpenManager.loadAd(
+            command.callbackId,
+            autoload: command.arguments[0] as? Bool ?? false,
+            ad: appOpen
+        )
     }
+
     @objc func isAppOpenAdLoaded(_ command: CDVInvokedUrlCommand) {
         // nativePromise('isAppOpenAdLoaded', []);
-        let isLoaded = self.appOpenAd?.isAdLoaded ?? false
-        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: isLoaded)
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        appOpenManager.isAdLoaded(command.callbackId)
     }
-    
+
     @objc func showAppOpenAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('showAppOpenAd', []);
-        DispatchQueue.main.async {
-            guard let ad = self.appOpenAd else {
-                let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "AppOpenAd not initialized")
-                self.commandDelegate.send(result, callbackId: command.callbackId)
-                return
-            }
-            
-            guard ad.isAdLoaded else {
-                let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "AppOpenAd not loaded")
-                self.commandDelegate.send(result, callbackId: command.callbackId)
-                return
-            }
-            
-            ad.present(from: self.viewController)
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Ad presented")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        appOpenManager.showAd(
+            command.callbackId,
+            controller: viewController
+        )
     }
-    
+
     @objc func destroyAppOpenAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('destroyAppOpenAd', []);
-        DispatchQueue.main.async {
-            self.appOpenAd?.destroy()
-            self.appOpenAd = nil
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "AppOpenAd destroyed")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        appOpenManager.destroyAd(command.callbackId)
     }
-    
+
+    // MARK: - Interstitial Ad
+
     @objc func loadInterstitialAd(_ command: CDVInvokedUrlCommand) {
         // nativePromise('loadInterstitialAd', [autoReload ?? false, autoShow ?? false, minInterval ?? 0]);
-        guard let args = command.arguments else {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid Interstitial arguments")
-            commandDelegate.send(result, callbackId: command.callbackId)
-            return
-        }              
-        
-        DispatchQueue.main.async {
-            self.interstitialAd = CASInterstitial(casID: self.casId ?? "")
-            guard let ad = self.interstitialAd else { return }
-            
-            ad.delegate = self
-            ad.impressionDelegate = self
-            
-            if let autoReload = args[0] as? Bool {
-                ad.isAutoloadEnabled = autoReload
-            }
-            
-            if let isAutoshowEnabled = args[1] as? Bool {
-                ad.isAutoshowEnabled = isAutoshowEnabled
-            }
-            
-            if let minInterval = args[2] as? Int {
-                ad.minInterval = minInterval
-            }
-            
-            ad.loadAd()
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Interstitial loading started")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
+        let interstitial: CASInterstitial
+        if let ad = interstitialManager.getAd() as? CASInterstitial {
+            interstitial = ad
+        } else {
+            interstitial = CASInterstitial(casID: casId)
         }
+
+        if let isAutoshowEnabled = command.arguments[1] as? Bool {
+            interstitial.isAutoshowEnabled = isAutoshowEnabled
+        }
+        if let minInterval = command.arguments[2] as? Int {
+            interstitial.minInterval = minInterval
+        }
+
+        interstitialManager.loadAd(
+            command.callbackId,
+            autoload: command.arguments[0] as? Bool ?? false,
+            ad: interstitial
+        )
     }
-   
+
     @objc func isInterstitialAdLoaded(_ command: CDVInvokedUrlCommand) {
         // nativePromise('isInterstitialAdLoaded', []);
-        let isLoaded = self.interstitialAd?.isAdLoaded ?? false
-        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: isLoaded)
-        commandDelegate.send(result, callbackId: command.callbackId)
+        interstitialManager.isAdLoaded(command.callbackId)
     }
-    
+
     @objc func showInterstitialAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('showInterstitialAd', []);
-        DispatchQueue.main.async {
-            guard let ad = self.interstitialAd else {
-                let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Interstitial not initialized")
-                self.commandDelegate.send(result, callbackId: command.callbackId)
-                return
-            }
-            
-            guard ad.isAdLoaded else {
-                let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Interstitial not loaded")
-                self.commandDelegate.send(result, callbackId: command.callbackId)
-                return
-            }
-            
-            ad.present(from: self.viewController)
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Interstitial presented")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        interstitialManager.showAd(
+            command.callbackId,
+            controller: viewController
+        )
     }
-    
-    
+
     @objc func destroyInterstitialAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('destroyInterstitialAd', []);
-        DispatchQueue.main.async {
-            self.interstitialAd?.destroy()
-            self.interstitialAd = nil
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Interstitial destroyed")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        interstitialManager.destroyAd(command.callbackId)
     }
-    
+
+    // MARK: - Rewarded Ad
+
     @objc func loadRewardedAd(_ command: CDVInvokedUrlCommand) {
         // nativePromise('loadRewardedAd', [autoReload ?? false]);
-        guard let args = command.arguments, args.count >= 1 else {
-            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid Rewarded arguments")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-            return
+        let rewarded: CASRewarded
+        if let ad = interstitialManager.getAd() as? CASRewarded {
+            rewarded = ad
+        } else {
+            rewarded = CASRewarded(casID: casId)
         }
-        
-        DispatchQueue.main.async {
-            self.rewardedAd = CASRewarded(casID: self.casId ?? "")
-            guard let ad = self.rewardedAd else { return }
-            
-            ad.delegate = self
-            ad.impressionDelegate = self
-            
-            if let autoReload =  args[0] as? Bool {
-                ad.isAutoloadEnabled = autoReload
-            }
-            
-            // FIXME: Need this?
-            ad.isExtraFillInterstitialAdEnabled = true
-            
-            ad.loadAd()
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Rewarded Loading started")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+
+        rewarded.isAutoloadEnabled = command.arguments[0] as? Bool ?? false
+        rewardedManager.loadAd(
+            command.callbackId,
+            autoload: command.arguments[0] as? Bool ?? false,
+            ad: rewarded
+        )
     }
-    
+
     @objc func isRewardedAdLoaded(_ command: CDVInvokedUrlCommand) {
         // nativePromise('isRewardedAdLoaded', []);
-        let isLoaded = self.rewardedAd?.isAdLoaded ?? false
-        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: isLoaded)
-        self.commandDelegate.send(result, callbackId: command.callbackId)
+        rewardedManager.isAdLoaded(command.callbackId)
     }
-    
+
     @objc func showRewardedAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('showRewardedAd', []);
-        DispatchQueue.main.async {
-            guard let ad = self.rewardedAd else {
-                let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "RewardedAd not initialized")
-                self.commandDelegate.send(result, callbackId: command.callbackId)
-                return
-            }
-            
-            guard ad.isAdLoaded else {
-                let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "RewardedAd not loaded")
-                self.commandDelegate.send(result, callbackId: command.callbackId)
-                return
-            }
-            
-            ad.present(from: self.viewController) {_ in
-                self.fireDocumentEvent("casai_ad_reward", body: [
-                    "adType": ad.contentInfo?.format.description ?? ""
-                ])
-            }
-            
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Rewarded Ad presented")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        rewardedManager.showAd(
+            command.callbackId,
+            controller: viewController
+        )
     }
-    
+
     @objc func destroyRewardedAd(_ command: CDVInvokedUrlCommand) {
         // nativeCall('destroyRewardedAd', []);
-        DispatchQueue.main.async {
-            self.rewardedAd?.destroy()
-            self.rewardedAd = nil
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: "Rewarded Ad destroyed")
-            self.commandDelegate.send(result, callbackId: command.callbackId)
-        }
+        rewardedManager.destroyAd(command.callbackId)
     }
 }
 
+// MARK: - Additional Methods
+
+extension CASMobileAds {
+    func getConsentFlowStatus(from model: ConsentFlowStatus) -> String {
+        let message: String
+        switch model {
+        case .unknown:
+            message = "Unknown"
+        case .obtained:
+            message = "Obtained"
+        case .notRequired:
+            message = "Not required"
+        case .unavailable:
+            message = "Unavailable"
+        case .internalError:
+            message = "Internal error"
+        case .networkError:
+            message = "Network error"
+        case .viewControllerInvalid:
+            message = "Invalid context"
+        case .flowStillPresenting:
+            message = "Still presenting"
+        @unknown default:
+            message = "Unknown"
+        }
+        return message
+    }
+}
 
 // MARK: - Cordova Event Bridge
 
 extension CASMobileAds {
-    func fireDocumentEvent(_ name: String, body: [String: Any]? = nil) {
+    func sendOk(_ callbackId: String?) {
+        let result = CDVPluginResult(status: CDVCommandStatus_OK)
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+
+    func sendOk(_ callbackId: String?, messageAs: String) {
+        let result = CDVPluginResult(
+            status: CDVCommandStatus_OK,
+            messageAs: messageAs
+        )
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+
+    func sendOk(_ callbackId: String?, messageAs: Bool) {
+        let result = CDVPluginResult(
+            status: CDVCommandStatus_OK,
+            messageAs: messageAs
+        )
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+
+    func sendOk(_ callbackId: String?, messageAs: [String: Any]) {
+        let result = CDVPluginResult(
+            status: CDVCommandStatus_OK,
+            messageAs: messageAs
+        )
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+
+    func sendError(_ callbackId: String?) {
+        let result = CDVPluginResult(status: CDVCommandStatus_ERROR)
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+
+    func sendRejectError(_ callbackId: String?, format: String) {
+        let body: [String: Any] = [
+            "format": format,
+            "code": 499,
+            "message": "Load Promise interrupted by new load call",
+        ]
+        let result = CDVPluginResult(
+            status: CDVCommandStatus_ERROR,
+            messageAs: body
+        )
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+
+    func sendError(_ callbackId: String?, format: String, error: AdError) {
+        let body: [String: Any] = [
+            "format": format,
+            "code": error.code,
+            "message": error.description,
+        ]
+        let result = CDVPluginResult(
+            status: CDVCommandStatus_ERROR,
+            messageAs: body
+        )
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+
+    func fireEvent(_ name: CASEvent, format: String) {
+        fireDocumentEvent(name.rawValue, body: ["format": format])
+    }
+
+    func fireEvent(_ name: CASEvent, body: [String: Any]) {
+        fireDocumentEvent(name.rawValue, body: body)
+    }
+
+    func fireImpressionEvent(format: String, contentInfo: AdContentInfo) {
+        let revenuePrecision: String
+        switch contentInfo.revenuePrecision {
+        case .estimated:
+            revenuePrecision = "estimated"
+        case .precise:
+            revenuePrecision = "precise"
+        case .floor:
+            revenuePrecision = "floor"
+        default:
+            revenuePrecision = "unknown"
+        }
+
+        var body: [String: Any] = [
+            "format": format,
+            "sourceUnitId": contentInfo.sourceUnitID,
+            "sourceName": contentInfo.sourceName,
+            "revenue": contentInfo.revenue,
+            "revenuePrecision": revenuePrecision,
+            "revenueTotal": contentInfo.revenueTotal,
+            "impressionDepth": contentInfo.impressionDepth,
+        ]
+        body["creativeId"] = contentInfo.creativeID
+        fireDocumentEvent(CASEvent.casai_ad_impressions.rawValue, body: body)
+    }
+
+    func fireErrorEvent(_ name: CASEvent, format: String, error: AdError) {
+        let body: [String: Any] = [
+            "format": format,
+            "code": error.code,
+            "message": error.errorDescription ?? "",
+        ]
+        fireDocumentEvent(name.rawValue, body: body)
+    }
+
+    private func fireDocumentEvent(_ name: String, body: [String: Any]) {
         var jsonBody = "{}"
-        if let body = body,
-           let data = try? JSONSerialization.data(withJSONObject: body, options: []),
-           let jsonString = String(data: data, encoding: .utf8) {
+        if let data = try? JSONSerialization.data(
+            withJSONObject: body,
+            options: []
+        ),
+            let jsonString = String(data: data, encoding: .utf8)
+        {
             jsonBody = jsonString
         }
-        
-        let js = "cordova.fireDocumentEvent('\(name)', \(jsonBody));"
-        self.commandDelegate.evalJs(js)
-    }
-}
 
-
-// MARK: - CASImpressionDelegate
-
-extension CASMobileAds: CASImpressionDelegate {
-    func adDidRecordImpression(info: AdContentInfo) {
-        fireDocumentEvent("casai_ad_impression", body: [
-            "adType": info.format.description,
-            "network": info.sourceName,
-            "price": info.revenue
-        ])
-    }
-}
-
-
-// MARK: - CASBannerDelegate
-
-extension CASMobileAds: CASBannerDelegate {
-    func bannerAdViewDidLoad(_ view: CASBannerView) {
-        fireDocumentEvent("casai_ad_loaded", body: [
-            "adType": view.contentInfo?.format.description ?? ""
-        ])
-    }
-    
-    func bannerAdView(_ adView: CASBannerView, didFailWith error: AdError) {
-        fireDocumentEvent("casai_ad_failed", body: [
-            "adType": adView.contentInfo?.format.description ?? "",
-            "message": error.description
-        ])
-    }
-    
-    func bannerAdViewDidRecordClick(_ adView: CASBannerView) {
-        fireDocumentEvent("casai_ad_clicked", body: [
-            "adType": adView.contentInfo?.format.description ?? ""
-        ])
-    }
-}
-
-// MARK: - CASScreenContentDelegate
-
-extension CASMobileAds: CASScreenContentDelegate {
-    func screenAdDidLoadContent(_ ad: any CASScreenContent) {
-        fireDocumentEvent("casai_ad_loaded", body: [
-            "adType": ad.contentInfo?.format.description ?? ""
-        ])
-    }
-    
-    func screenAd(_ ad: any CASScreenContent, didFailToLoadWithError error: AdError) {
-        fireDocumentEvent("casai_ad_load_failed", body: [
-            "adType": ad.contentInfo?.format.description ?? "",
-            "error": error.description
-        ])
-    }
-    
-    func screenAdWillPresentContent(_ ad: any CASScreenContent) {
-        fireDocumentEvent("casai_ad_showed", body: [
-            "adType": ad.contentInfo?.format.description ?? ""
-        ])
-    }
-    
-    func screenAd(_ ad: any CASScreenContent, didFailToPresentWithError error: AdError) {
-        fireDocumentEvent("casai_ad_show_failed", body: [
-            "adType": ad.contentInfo?.format.description ?? "",
-            "error": error.description
-        ])
-    }
-    
-    func screenAdDidClickContent(_ ad: any CASScreenContent) {
-        fireDocumentEvent("casai_ad_clicked", body: [
-            "adType": ad.contentInfo?.format.description ?? ""
-        ])
-    }
-    
-    func screenAdDidDismissContent(_ ad: any CASScreenContent) {
-        fireDocumentEvent("casai_ad_dismissed", body: [
-            "adType": ad.contentInfo?.format.description ?? ""
-        ])
+        DispatchQueue.main.async {
+            let js = "cordova.fireDocumentEvent('\(name)', \(jsonBody));"
+            self.commandDelegate?.evalJs(js)
+        }
     }
 }
