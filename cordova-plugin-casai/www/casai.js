@@ -124,7 +124,7 @@ var rewardedAd = {
 var casai = {
   Format: {
     BANNER: 'Banner',
-    MREC: 'MediumRectangle',
+    MREC: 'MREC',
     APPOPEN: 'AppOpen',
     INTERSTITIAL: 'Interstitial',
     REWARDED: 'Rewarded',
