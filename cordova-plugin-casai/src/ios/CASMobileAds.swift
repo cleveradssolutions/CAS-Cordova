@@ -148,7 +148,7 @@ class CASMobileAds: CDVPlugin {
             .withDebugGeography(debugGeography)
             .withViewControllerToPresent(self.viewController)
             .withCompletionHandler { status in
-                self.sendOk(command.callbackId, self.getConsentFlowStatus(from: status))
+                self.sendOk(command.callbackId, messageAs: self.getConsentFlowStatus(from: status))
             }
         
         if ifRequired {
@@ -163,7 +163,7 @@ class CASMobileAds: CDVPlugin {
     
     @objc func getSDKVersion(_ command: CDVInvokedUrlCommand) {
         // nativePromise('getSDKVersion');
-        sendOk(command.callbackId, CAS.getSDKVersion())
+        sendOk(command.callbackId, messageAs: CAS.getSDKVersion())
     }
     
     @objc func setDebugLoggingEnabled(_ command: CDVInvokedUrlCommand) {
@@ -288,13 +288,12 @@ class CASMobileAds: CDVPlugin {
         } else {
             appOpen = CASAppOpen(casID: casId)
         }
-                        
-        appOpen.isAutoloadEnabled = command.arguments[0] as? Bool ?? false
+                                
         if let isAutoshowEnabled = command.arguments[1] as? Bool {
             appOpen.isAutoshowEnabled = isAutoshowEnabled
         }
         
-        appOpenManager.loadAd(command.callbackId, ad: appOpen)
+        appOpenManager.loadAd(command.callbackId, autoload: command.arguments[0] as? Bool ?? false, ad: appOpen)
     }
     
     @objc func isAppOpenAdLoaded(_ command: CDVInvokedUrlCommand) {
@@ -323,8 +322,7 @@ class CASMobileAds: CDVPlugin {
         } else {
             interstitial = CASInterstitial(casID: casId)
         }
-        
-        interstitial.isAutoloadEnabled = command.arguments[0] as? Bool ?? false
+                
         if let isAutoshowEnabled = command.arguments[1] as? Bool {
             interstitial.isAutoshowEnabled = isAutoshowEnabled
         }
@@ -332,7 +330,7 @@ class CASMobileAds: CDVPlugin {
             interstitial.minInterval = minInterval
         }
                
-        interstitialManager.loadAd(command.callbackId, ad: interstitial)
+        interstitialManager.loadAd(command.callbackId, autoload: command.arguments[0] as? Bool ?? false, ad: interstitial)
     }
     
     @objc func isInterstitialAdLoaded(_ command: CDVInvokedUrlCommand) {
@@ -363,7 +361,7 @@ class CASMobileAds: CDVPlugin {
         }
                 
         rewarded.isAutoloadEnabled = command.arguments[0] as? Bool ?? false
-        rewardedManager.loadAd(command.callbackId, ad: rewarded)
+        rewardedManager.loadAd(command.callbackId, autoload: command.arguments[0] as? Bool ?? false, ad: rewarded)
     }
     
     @objc func isRewardedAdLoaded(_ command: CDVInvokedUrlCommand) {
@@ -416,53 +414,38 @@ extension CASMobileAds {
 // MARK: - Cordova Event Bridge
 
 extension CASMobileAds {
-    func sendOk(_ callbackId: String?, _ payload: Any? = nil) {
-        sendResult(callbackId, status: CDVCommandStatus_OK, payload: payload)
-    }
-
-    func sendError(_ callbackId: String?, _ payload: Any? = nil) {
-        sendResult(callbackId, status: CDVCommandStatus_ERROR, payload: payload)
+    func sendOk(_ callbackId: String?) {
+        let result = CDVPluginResult(status: CDVCommandStatus_OK)
+        commandDelegate?.send(result, callbackId: callbackId)
     }
     
-    func sendErrorEvent(_ callbackId: String?, format: String, error: AdError) {
+    func sendOk(_ callbackId: String?, messageAs: String) {
+        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: messageAs)
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+    
+    func sendOk(_ callbackId: String?, messageAs: Bool) {
+        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: messageAs)
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+    
+    func sendError(_ callbackId: String?) {
+        let result = CDVPluginResult(status: CDVCommandStatus_ERROR)
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+    
+    func sendError(_ callbackId: String?, body: [String: Any]) {
+        let result = CDVPluginResult(status: CDVCommandStatus_ERROR)
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+    
+    func sendError(_ callbackId: String?, format: String, error: AdError) {
         let body: [String: Any] = [
             "format": format,
             "code": error.code,
             "message": error.errorDescription ?? ""
         ]
-        sendResult(callbackId, status: CDVCommandStatus_ERROR, payload: body)
-    }
-       
-    func sendResult(_ callbackId: String?, status: CDVCommandStatus, payload: Any? = nil) {
-        let result: CDVPluginResult
-
-        switch payload {
-        case nil:
-            result = CDVPluginResult(status: status)
-
-        case let str as String:
-            result = CDVPluginResult(status: status, messageAs: str)
-
-        case let bool as Bool:
-            result = CDVPluginResult(status: status, messageAs: bool)
-
-        case let arr as [Any]:
-            result = CDVPluginResult(status: status, messageAs: arr)
-
-        case let dict as [String: Any]:
-            result = CDVPluginResult(status: status, messageAs: dict)
-
-        case let data as Data:
-            result = CDVPluginResult(status: status, messageAsArrayBuffer: data)
-
-        default:
-            // Fallback: convert to string
-            result = CDVPluginResult(
-                status: status,
-                messageAs: "\(payload!)"
-            )
-        }
-      
+        let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: body)
         commandDelegate?.send(result, callbackId: callbackId)
     }
     

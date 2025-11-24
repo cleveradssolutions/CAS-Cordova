@@ -347,7 +347,7 @@ extension CASViewAdManager: CASBannerDelegate {
         plugin?.fireErrorEvent(.casai_ad_load_failed, format: format, error: error)
         
         if let callbackId = self.pendingLoadCallbackId {
-            self.plugin?.sendErrorEvent(callbackId, format: format, error: error)
+            self.plugin?.sendError(callbackId, format: format, error: error)
             self.pendingLoadCallbackId = nil
         }
     }

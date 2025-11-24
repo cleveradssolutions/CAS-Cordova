@@ -28,23 +28,22 @@ class CASScreenAdManager: NSObject {
     
     // MARK: - Methods
     
-    func loadAd(_ callbackId: String, ad: CASScreenContent) {
+    func loadAd(_ callbackId: String, autoload: Bool, ad: CASScreenContent) {
         // Setup delegates
         ad.delegate = self
         ad.impressionDelegate = self
         
         if pendingLoadCallbackId != nil {
-            var body: [String: Any] = [:]
-            body["format"] = format
-            body["code"] = 499
-            body["message"] = "Load Promise interrupted by new load call"
-            
-            plugin?.fireEvent(.casai_ad_load_failed, body: body)
-            return
+            let body: [String: Any] = [
+                "format": format,
+                "code": 499,
+                "message": "Load Promise interrupted by new load call"
+            ]
+            plugin?.sendError(pendingLoadCallbackId, body: body)
         }
         
         pendingLoadCallbackId = callbackId
-        isUserEarnReward = false
+        ad.isAutoloadEnabled = autoload
         adContent = ad
         
         ad.loadAd()
@@ -56,12 +55,12 @@ class CASScreenAdManager: NSObject {
    
     func showAd(_ callbackId: String, controller: UIViewController?) {
         guard let ad = adContent else {
-            plugin?.sendError(callbackId, AdError.notReady.errorDescription)
+            plugin?.sendError(callbackId, format: format, error: AdError.notReady)
             return
         }
         
         guard ad.isAdLoaded else {
-            plugin?.sendError(callbackId, AdError.notReady.errorDescription)
+            plugin?.sendError(callbackId, format: format, error: AdError.notReady)
             return
         }
         
@@ -69,6 +68,7 @@ class CASScreenAdManager: NSObject {
         
         // Present depending on type
         if let rewarded = ad as? CASRewarded {
+            isUserEarnReward = false
             rewarded.present(from: controller) { _ in
                 self.isUserEarnReward = true
             }
@@ -83,7 +83,7 @@ class CASScreenAdManager: NSObject {
     
     func isAdLoaded(_ callbackId: String) {
         let isLoaded = adContent?.isAdLoaded ?? false
-        plugin?.sendOk(callbackId, isLoaded)
+        plugin?.sendOk(callbackId, messageAs: isLoaded)
     }
         
     func destroyAd(_ callbackId: String) {
@@ -119,7 +119,7 @@ extension CASScreenAdManager: CASScreenContentDelegate {
         plugin?.fireErrorEvent(.casai_ad_load_failed, format: format, error: error)
         
         if let callbackId = self.pendingLoadCallbackId {
-            self.plugin?.sendErrorEvent(callbackId, format: format, error: error)
+            self.plugin?.sendError(callbackId, format: format, error: error)
             self.pendingLoadCallbackId = nil
         }
     }
@@ -127,9 +127,8 @@ extension CASScreenAdManager: CASScreenContentDelegate {
     func screenAdWillPresentContent(_ ad: any CASScreenContent) {
         plugin?.fireEvent(.casai_ad_showed, body: ["format": format])
         
-        if let callbackId = self.pendingShowCallbackId {
-            self.plugin?.sendOk(callbackId)
-            self.pendingShowCallbackId = nil
+        if isUserEarnReward {
+            plugin?.fireEvent(.casai_ad_reward)
         }
     }
     
@@ -137,7 +136,7 @@ extension CASScreenAdManager: CASScreenContentDelegate {
         plugin?.fireErrorEvent(.casai_ad_show_failed, format: format, error: error)
         
         if let callbackId = self.pendingShowCallbackId {
-            self.plugin?.sendErrorEvent(callbackId, format: format, error: error)
+            self.plugin?.sendError(callbackId, format: format, error: error)
             self.pendingShowCallbackId = nil
         }
     }
@@ -149,8 +148,9 @@ extension CASScreenAdManager: CASScreenContentDelegate {
     func screenAdDidDismissContent(_ ad: any CASScreenContent) {
         plugin?.fireEvent(.casai_ad_dismissed, body: ["format": format])
         
-        if isUserEarnReward {
-            plugin?.fireEvent(.casai_ad_reward)
+        if let callbackId = self.pendingShowCallbackId {
+            self.plugin?.sendOk(callbackId)
+            self.pendingShowCallbackId = nil
         }
     }
 }
