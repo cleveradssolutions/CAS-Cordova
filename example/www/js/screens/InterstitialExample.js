@@ -1,18 +1,32 @@
 route('#/interstitial', function (root) {
   renderTemplate('tmpl-interstitial', root);
-  var cas = window.casai;
 
-  function onInterstitialLoad() {
-    cas.interstitialAd.load({ autoReload: false, autoShow: false, minInterval: 0 })
-      .then(function (info) { console.log('Interstitial load()', info); })
-      .catch(function (e) { console.log('Interstitial load() failed', e); });
+  function onInterstitialLoadClicked() {
+    casai.interstitialAd
+      .load({ autoReload: false, autoShow: false, minInterval: 0 })
+      .then(function () {
+        console.log('Interstitial Ad loaded');
+      })
+      .catch(function (e) {
+        console.log('Interstitial Ad failed to load: ' + (e && e.message));
+      });
   }
-  function onInterstitialShow() {
-    cas.interstitialAd.show()
-      .then(function (info) { console.log('Interstitial dismissed', info); })
-      .catch(function (e) { console.log('Interstitial show() failed', e); });
+  function onInterstitialShowClicked() {
+    casai.interstitialAd
+      .show()
+      .then(function () {
+        console.log('Interstitial Ad closed');
+      })
+      .catch(function (e) {
+        console.log('Interstitial Ad failed to show: ' + (e && e.message));
+      });
+  }
+  function onInterstitialDestroyClicked() {
+    casai.interstitialAd.destroy && casai.interstitialAd.destroy();
+    console.log('Interstitial Ad destroy()');
   }
 
-  document.getElementById('iLoad').onclick = onInterstitialLoad;
-  document.getElementById('iShow').onclick = onInterstitialShow;
+  document.getElementById('iLoad').onclick = onInterstitialLoadClicked;
+  document.getElementById('iShow').onclick = onInterstitialShowClicked;
+  document.getElementById('iDestroy').onclick = onInterstitialDestroyClicked;
 });

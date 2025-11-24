@@ -1,38 +1,48 @@
 route('#/banner', function (root) {
   renderTemplate('tmpl-banner', root);
 
-  var cas = window.casai;
-  var currentPos = cas.Position.BOTTOM_CENTER;
+  var currentPos = casai.Position.BOTTOM_CENTER;
 
-  function onBannerLoad() {
-    cas.bannerAd.load({ adSize: cas.Size.SMART, autoReload: false, refreshInterval: 30 })
-      .then(function (info) { console.log('Banner load()', info); })
-      .catch(function (e) { console.log('Banner load() failed', e); });
+  function onBannerLoadClicked() {
+    casai.bannerAd
+      .load({ adSize: casai.Size.SMART, autoReload: false, refreshInterval: 30 })
+      .then(function () {
+        console.log('Banner Ad loaded');
+      })
+      .catch(function (e) {
+        console.log('Banner Ad failed to load: ' + (e && e.message));
+      });
   }
-  function onBannerShow() {
-    cas.bannerAd.show({ position: currentPos });
-    console.log('Banner show()', currentPos);
+
+  function onBannerShowClicked() {
+    casai.bannerAd.show({ position: currentPos });
+    console.log('Banner Ad show() at', currentPos);
   }
-  function onBannerHide() {
-    cas.bannerAd.hide();
-    console.log('Banner hide()');
+
+  function onBannerHideClicked() {
+    casai.bannerAd.hide();
+    console.log('Banner Ad hide()');
   }
-  function onBannerDestroy() {
-    cas.bannerAd.destroy();
-    console.log('Banner destroy()');
+
+  function onBannerDestroyClicked() {
+    casai.bannerAd.destroy();
+    console.log('Banner Ad destroy()');
   }
-  function onBannerPositionClick(btn) {
-    currentPos = cas.Position[btn.dataset.pos];
+
+  function onBannerPositionClicked(btn) {
+    currentPos = casai.Position[btn.dataset.pos];
     console.log('Banner position ->', btn.dataset.pos, currentPos);
-    cas.bannerAd.show({ position: currentPos });
+    casai.bannerAd.show({ position: currentPos });
   }
 
-  document.getElementById('bLoad').onclick = onBannerLoad;
-  document.getElementById('bShow').onclick = onBannerShow;
-  document.getElementById('bHide').onclick = onBannerHide;
-  document.getElementById('bDestroy').onclick = onBannerDestroy;
+  document.getElementById('bLoad').onclick = onBannerLoadClicked;
+  document.getElementById('bShow').onclick = onBannerShowClicked;
+  document.getElementById('bHide').onclick = onBannerHideClicked;
+  document.getElementById('bDestroy').onclick = onBannerDestroyClicked;
 
   root.querySelectorAll('.pos').forEach(function (btn) {
-    btn.onclick = function () { onBannerPositionClick(btn); };
+    btn.onclick = function () {
+      onBannerPositionClicked(btn);
+    };
   });
 });

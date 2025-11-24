@@ -1,22 +1,32 @@
 route('#/rewarded', function (root) {
   renderTemplate('tmpl-rewarded', root);
-  var cas = window.casai;
 
-  function onRewardedLoad() {
-    cas.rewardedAd.load({ autoReload: false })
-      .then(function (info) { console.log('Rewarded load()', info); })
-      .catch(function (e) { console.log('Rewarded load() failed', e); });
-  }
-
-  function onRewardedShow() {
-    cas.rewardedAd.show()
-      .then(function (info) {
-        if (info.isUserEarnReward) console.log('Rewarded: user earned reward', info);
-        else console.log('Rewarded closed without reward', info);
+  function onRewardedLoadClicked() {
+    casai.rewardedAd
+      .load({ autoReload: false })
+      .then(function () {
+        console.log('Rewarded Ad loaded');
       })
-      .catch(function (e) { console.log('Rewarded show() failed', e); });
+      .catch(function (e) {
+        console.log('Rewarded Ad failed to load: ' + (e && e.message));
+      });
+  }
+  function onRewardedShowClicked() {
+    casai.rewardedAd
+      .show()
+      .then(function () {
+        console.log('Rewarded Ad closed');
+      })
+      .catch(function (e) {
+        console.log('Rewarded Ad failed to show: ' + (e && e.message));
+      });
+  }
+  function onRewardedDestroyClicked() {
+    casai.rewardedAd.destroy && casai.rewardedAd.destroy();
+    console.log('Rewarded Ad destroy()');
   }
 
-  document.getElementById('rLoad').onclick = onRewardedLoad;
-  document.getElementById('rShow').onclick = onRewardedShow;
+  document.getElementById('rLoad').onclick = onRewardedLoadClicked;
+  document.getElementById('rShow').onclick = onRewardedShowClicked;
+  document.getElementById('rDestroy').onclick = onRewardedDestroyClicked;
 });

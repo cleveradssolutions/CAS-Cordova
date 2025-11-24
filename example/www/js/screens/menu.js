@@ -1,19 +1,26 @@
 route('#/menu', function (root) {
   renderTemplate('tmpl-menu', root);
 
-  function onMenuNavClick(btn) {
+  function onMenuNavClicked(btn) {
     go(btn.dataset.go);
   }
-  function onShowConsent() {
-    window.casai.showConsentFlow({ ifRequired: true, debugGeography: 'eea' })
-      .then(function (res) { console.log('Consent flow result', res); })
-      .catch(function (e) { console.log('Consent flow failed', e); });
+  function onShowConsentClicked() {
+    casai
+      .showConsentFlow({ ifRequired: true, debugGeography: 'eea' })
+      .then(function () {
+        console.log('Consent flow finished');
+      })
+      .catch(function (e) {
+        console.log('Consent flow failed: ' + (e && e.message));
+      });
   }
 
   root.querySelectorAll('[data-go]').forEach(function (btn) {
-    btn.onclick = function () { onMenuNavClick(btn); };
+    btn.onclick = function () {
+      onMenuNavClicked(btn);
+    };
   });
 
   var consentBtn = document.getElementById('btnConsent');
-  if (consentBtn) consentBtn.onclick = onShowConsent;
+  if (consentBtn) consentBtn.onclick = onShowConsentClicked;
 });
