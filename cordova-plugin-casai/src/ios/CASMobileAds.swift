@@ -429,13 +429,23 @@ extension CASMobileAds {
         commandDelegate?.send(result, callbackId: callbackId)
     }
     
+    func sendOk(_ callbackId: String?, messageAs: [String: Any]) {
+        let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: messageAs)
+        commandDelegate?.send(result, callbackId: callbackId)
+    }
+    
     func sendError(_ callbackId: String?) {
         let result = CDVPluginResult(status: CDVCommandStatus_ERROR)
         commandDelegate?.send(result, callbackId: callbackId)
     }
     
-    func sendError(_ callbackId: String?, body: [String: Any]) {
-        let result = CDVPluginResult(status: CDVCommandStatus_ERROR)
+    func sendRejectError(_ callbackId: String?, format: String) {
+        let body: [String: Any] = [
+            "format": format,
+            "code": 499,
+            "message": "Load Promise interrupted by new load call"
+        ]
+        let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: body)
         commandDelegate?.send(result, callbackId: callbackId)
     }
     
@@ -454,12 +464,26 @@ extension CASMobileAds {
     }
         
     func fireImpressionEvent(format: String, contentInfo: AdContentInfo) {
+        let revenuePrecision: String
+        switch contentInfo.revenuePrecision {
+        case .estimated:
+            revenuePrecision = "estimated"
+        case .precise:
+            revenuePrecision = "precise"
+        case .floor:
+            revenuePrecision = "floor"
+        case .unknown:
+            revenuePrecision = "unknown"
+        @unknown default:
+            revenuePrecision = "unknown"
+        }
+        
         var body: [String: Any] = [
             "format": format,
-            "sourceUnitId": contentInfo.sourceID.rawValue,
+            "sourceUnitId": contentInfo.sourceUnitID,
             "sourceName": contentInfo.sourceName,
             "revenue": contentInfo.revenue,
-            "revenuePrecision": contentInfo.revenuePrecision.rawValue,
+            "revenuePrecision": revenuePrecision,
             "revenueTotal": contentInfo.revenueTotal,
             "impressionDepth": contentInfo.impressionDepth
         ]

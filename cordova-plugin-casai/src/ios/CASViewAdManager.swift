@@ -73,7 +73,7 @@ class CASViewAdManager: NSObject {
         lastRefreshInterval = refreshInterval
         
         // Save callback
-        self.pendingLoadCallbackId = command.callbackId
+        pendingLoadCallbackId = command.callbackId
         
         let adSize = AdSize.mediumRectangle
         loadAd(adSize, casId: casId, viewController: viewController)
@@ -95,7 +95,7 @@ class CASViewAdManager: NSObject {
         updateSizeLimits(maxWidth: maxWidth, maxHeight: maxHeight)
         
         // Save callback
-        self.pendingLoadCallbackId = command.callbackId
+        pendingLoadCallbackId = command.callbackId
         
         let adSize = self.recalculateSize(for: adSizeString)
         loadAd(adSize, casId: casId, viewController: viewController)
@@ -104,6 +104,10 @@ class CASViewAdManager: NSObject {
     /// Load banner. command.arguments should be:
     /// [ adSize: AdSize, viewController: UIViewController? ]
     func loadAd(_ adSize: AdSize, casId: String, viewController: UIViewController?) {
+        if pendingLoadCallbackId != nil {
+            plugin?.sendRejectError(pendingLoadCallbackId, format: format)
+        }
+        
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let vc = viewController else { return }
             
@@ -337,18 +341,18 @@ extension CASViewAdManager: CASBannerDelegate {
     func bannerAdViewDidLoad(_ view: CASBannerView) {
         plugin?.fireEvent(.casai_ad_loaded, body: ["format": format])
         
-        if let callbackId = self.pendingLoadCallbackId {
+        if let callbackId = pendingLoadCallbackId {
             plugin?.sendOk(callbackId)
-            self.pendingLoadCallbackId = nil
+            pendingLoadCallbackId = nil
         }
     }
     
     func bannerAdView(_ adView: CASBannerView, didFailWith error: AdError) {
         plugin?.fireErrorEvent(.casai_ad_load_failed, format: format, error: error)
         
-        if let callbackId = self.pendingLoadCallbackId {
-            self.plugin?.sendError(callbackId, format: format, error: error)
-            self.pendingLoadCallbackId = nil
+        if let callbackId = pendingLoadCallbackId {
+            plugin?.sendError(callbackId, format: format, error: error)
+            pendingLoadCallbackId = nil
         }
     }
     

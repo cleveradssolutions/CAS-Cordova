@@ -34,12 +34,7 @@ class CASScreenAdManager: NSObject {
         ad.impressionDelegate = self
         
         if pendingLoadCallbackId != nil {
-            let body: [String: Any] = [
-                "format": format,
-                "code": 499,
-                "message": "Load Promise interrupted by new load call"
-            ]
-            plugin?.sendError(pendingLoadCallbackId, body: body)
+            plugin?.sendRejectError(pendingLoadCallbackId, format: format)
         }
         
         pendingLoadCallbackId = callbackId
@@ -109,35 +104,31 @@ extension CASScreenAdManager: CASScreenContentDelegate {
     func screenAdDidLoadContent(_ ad: any CASScreenContent) {
         plugin?.fireEvent(.casai_ad_loaded, body: ["format": format])
         
-        if let callbackId = self.pendingLoadCallbackId {
-            self.plugin?.sendOk(callbackId)
-            self.pendingLoadCallbackId = nil
+        if let callbackId = pendingLoadCallbackId {
+            plugin?.sendOk(callbackId)
+            pendingLoadCallbackId = nil
         }
     }
     
     func screenAd(_ ad: any CASScreenContent, didFailToLoadWithError error: AdError) {
         plugin?.fireErrorEvent(.casai_ad_load_failed, format: format, error: error)
         
-        if let callbackId = self.pendingLoadCallbackId {
-            self.plugin?.sendError(callbackId, format: format, error: error)
-            self.pendingLoadCallbackId = nil
+        if let callbackId = pendingLoadCallbackId {
+            plugin?.sendError(callbackId, format: format, error: error)
+            pendingLoadCallbackId = nil
         }
     }
     
     func screenAdWillPresentContent(_ ad: any CASScreenContent) {
         plugin?.fireEvent(.casai_ad_showed, body: ["format": format])
-        
-        if isUserEarnReward {
-            plugin?.fireEvent(.casai_ad_reward)
-        }
     }
     
     func screenAd(_ ad: any CASScreenContent, didFailToPresentWithError error: AdError) {
         plugin?.fireErrorEvent(.casai_ad_show_failed, format: format, error: error)
         
-        if let callbackId = self.pendingShowCallbackId {
-            self.plugin?.sendError(callbackId, format: format, error: error)
-            self.pendingShowCallbackId = nil
+        if let callbackId = pendingShowCallbackId {
+            plugin?.sendError(callbackId, format: format, error: error)
+            pendingShowCallbackId = nil
         }
     }
     
@@ -145,12 +136,21 @@ extension CASScreenAdManager: CASScreenContentDelegate {
         plugin?.fireEvent(.casai_ad_clicked, body: ["format": format])
     }
     
-    func screenAdDidDismissContent(_ ad: any CASScreenContent) {
+    func screenAdDidDismissContent(_ ad: any CASScreenContent) {        
+        if isUserEarnReward {
+            plugin?.fireEvent(.casai_ad_reward)
+        }
+        
         plugin?.fireEvent(.casai_ad_dismissed, body: ["format": format])
         
-        if let callbackId = self.pendingShowCallbackId {
-            self.plugin?.sendOk(callbackId)
-            self.pendingShowCallbackId = nil
+        if let callbackId = pendingShowCallbackId {
+            if ad is CASRewarded {
+                plugin?.sendOk(callbackId, messageAs: ["isUserEarnReward": isUserEarnReward])
+            } else {
+                plugin?.sendOk(callbackId)
+            }
+                        
+            pendingShowCallbackId = nil
         }
     }
 }
