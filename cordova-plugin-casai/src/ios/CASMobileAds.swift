@@ -18,8 +18,6 @@ enum CASEvent: String {
 
 @objc(CASMobileAds)
 class CASMobileAds: CDVPlugin {
-    // MARK: - Properties
-
     private(set) var casId: String = ""
     private var initResponse: [String: Any] = [:]
 
@@ -435,16 +433,11 @@ class CASMobileAds: CDVPlugin {
         // nativeCall('destroyRewardedAd', []);
         rewardedManager.destroyAd(command.callbackId)
     }
-}
-
-// MARK: - Additional Methods
-
-extension CASMobileAds {
+    
+    
     func getConsentFlowStatus(from model: ConsentFlowStatus) -> String {
         let message: String
         switch model {
-        case .unknown:
-            message = "Unknown"
         case .obtained:
             message = "Obtained"
         case .notRequired:
@@ -459,7 +452,7 @@ extension CASMobileAds {
             message = "Invalid context"
         case .flowStillPresenting:
             message = "Still presenting"
-        @unknown default:
+        default:
             message = "Unknown"
         }
         return message
@@ -495,11 +488,6 @@ extension CASMobileAds {
             status: CDVCommandStatus_OK,
             messageAs: messageAs
         )
-        commandDelegate?.send(result, callbackId: callbackId)
-    }
-
-    func sendError(_ callbackId: String?) {
-        let result = CDVPluginResult(status: CDVCommandStatus_ERROR)
         commandDelegate?.send(result, callbackId: callbackId)
     }
 
@@ -567,7 +555,7 @@ extension CASMobileAds {
         let body: [String: Any] = [
             "format": format,
             "code": error.code.rawValue,
-            "message": error.errorDescription ?? "",
+            "message": error.description,
         ]
         fireDocumentEvent(name.rawValue, body: body)
     }

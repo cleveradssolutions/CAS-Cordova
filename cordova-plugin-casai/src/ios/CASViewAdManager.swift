@@ -19,8 +19,6 @@ class CASViewAdManager: NSObject {
     private let format: String
     weak var plugin: CASMobileAds?
 
-    private var isHidden: Bool = true
-
     // banner
     private var bannerView: CASBannerView?
 
@@ -34,6 +32,7 @@ class CASViewAdManager: NSObject {
     private var constraintY: NSLayoutConstraint?
 
     // state
+    private var isHidden: Bool = true
     private var activePosition: Position = .bottomCenter
     private var horizontalOffset: Int = 0
     private var verticalOffset: Int = 0
@@ -142,43 +141,34 @@ class CASViewAdManager: NSObject {
         let offsetY =
             command.arguments.count > 2 ? (command.arguments[2] as? Int ?? 0) : 0
 
-        guard let banner = bannerView else {
-            // do NOT return error — show is allowed before load
-            return
-        }
+        activePosition = Position(rawValue: posIndex) ?? .bottomCenter
+        horizontalOffset = offsetX
+        verticalOffset = offsetY
+        isHidden = false
 
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            self.activePosition = Position(rawValue: posIndex) ?? .bottomCenter
-            self.horizontalOffset = offsetX
-            self.verticalOffset = offsetY
-
-            self.refreshPosition()
-            self.isHidden = false
-            banner.isHidden = false
+        if bannerView != nil {
+            DispatchQueue.main.async {
+                self.refreshPosition()
+                self.bannerView?.isHidden = false
+            }
         }
 
         plugin?.sendOk(command.callbackId)
     }
 
-    func hideBannerAd(_ command: CDVInvokedUrlCommand?) {
+    func hideBannerAd(_ command: CDVInvokedUrlCommand) {
+        self.isHidden = true
         DispatchQueue.main.async {
-            self.isHidden = true
             self.bannerView?.isHidden = true
-            if let callbackId = command?.callbackId {
-                self.plugin?.sendOk(callbackId)
-            }
         }
+        self.plugin?.sendOk(command.callbackId)
     }
 
-    func destroyBannerAd(_ command: CDVInvokedUrlCommand?) {
+    func destroyBannerAd(_ command: CDVInvokedUrlCommand) {
         DispatchQueue.main.async {
             self.destroy()
-            if let callbackId = command?.callbackId {
-                self.plugin?.sendOk(callbackId)
-            }
         }
+        self.plugin?.sendOk(command.callbackId)
     }
 
     // MARK: - Internals
@@ -199,8 +189,6 @@ class CASViewAdManager: NSObject {
 
         constraintX = nil
         constraintY = nil
-
-        pendingLoadCallbackId = nil
     }
 
     @objc private func orientationChangedNotification(
