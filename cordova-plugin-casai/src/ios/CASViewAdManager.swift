@@ -32,7 +32,7 @@ class CASViewAdManager: NSObject {
     
     private var lastAutoReload: Bool = true
     private var lastRefreshInterval: Int = 30
-        
+    
     // constraints
     private var constraintX: NSLayoutConstraint?
     private var constraintY: NSLayoutConstraint?
@@ -72,6 +72,10 @@ class CASViewAdManager: NSObject {
         lastAutoReload = autoReload
         lastRefreshInterval = refreshInterval
         
+        if pendingLoadCallbackId != nil {
+            plugin?.sendRejectError(pendingLoadCallbackId, format: format)
+        }
+        
         // Save callback
         pendingLoadCallbackId = command.callbackId
         
@@ -87,12 +91,16 @@ class CASViewAdManager: NSObject {
         let maxHeight = command.arguments[2] as? Double
         let autoReload = command.arguments[3] as? Bool ?? true
         let refreshInterval = command.arguments[4] as? Int ?? 30
-                                
+        
         // Save JS parameters
         lastAdSizeString = adSizeString
         lastAutoReload = autoReload
         lastRefreshInterval = refreshInterval
         updateSizeLimits(maxWidth: maxWidth, maxHeight: maxHeight)
+        
+        if pendingLoadCallbackId != nil {
+            plugin?.sendRejectError(pendingLoadCallbackId, format: format)
+        }
         
         // Save callback
         pendingLoadCallbackId = command.callbackId
@@ -104,10 +112,6 @@ class CASViewAdManager: NSObject {
     /// Load banner. command.arguments should be:
     /// [ adSize: AdSize, viewController: UIViewController? ]
     func loadAd(_ adSize: AdSize, casId: String, viewController: UIViewController?) {
-        if pendingLoadCallbackId != nil {
-            plugin?.sendRejectError(pendingLoadCallbackId, format: format)
-        }
-        
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let vc = viewController else { return }
             
