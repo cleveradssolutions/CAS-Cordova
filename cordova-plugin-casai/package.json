@@ -28,5 +28,9 @@
       "ios",
       "browser"
     ]
+  },
+  "scripts": {
+    "try": "npm publish --dry-run",
+    "release": "npm publish --access public"
   }
 }

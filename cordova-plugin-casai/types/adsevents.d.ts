@@ -145,7 +145,7 @@ interface Document {
    * Called when a user earns a reward from the ad.
    * To check the ad format:
    * ```
-   * if (ev.detail.format == casai.Format.APPOPEN) {
+   * if (ev.detail.format == casai.Format.REWARDED) {
    * }
    * ```
    */

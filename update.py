@@ -8,6 +8,9 @@ _CAS_VERSION = "4.4.2"
 # https://cordova.apache.org/docs/en/12.x-2025.01/guide/hybrid/plugins/index.html#publishing-plugins
 
 # Plugin publishing flow (from the project root):
+# python3 update.py
+# cd cordova-plugin-casai
+# npm run release
 
 def update_version_in_file(file_path, prefix, suffix):
     with open(file_path, 'r', encoding='utf-8') as file:
