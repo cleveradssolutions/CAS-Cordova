@@ -2,8 +2,8 @@ import os
 import re
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.4.2"
-_CAS_VERSION = "4.4.2"
+_PLUGIN_VERSION = "4.5.0"
+_CAS_VERSION = "4.5.0"
 
 # https://cordova.apache.org/docs/en/12.x-2025.01/guide/hybrid/plugins/index.html#publishing-plugins
 
@@ -197,4 +197,9 @@ update_version_in_file(
     file_path=os.path.join(plugin_dir, 'scripts', 'helper.js'),
     prefix="const CAS_VERSION = '",
     suffix=_CAS_VERSION + "';"
+)
+update_version_in_file(
+    file_path=os.path.join(plugin_dir, 'scripts', 'helper.js'),
+    prefix="const CAS_ANDROID_FIX = '",
+    suffix="';"
 )

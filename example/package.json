@@ -20,7 +20,10 @@
         "IOS_CAS_ID": "demo",
         "ANDROID_CAS_SOLUTIONS": "-",
         "ANDROID_CAS_ADAPTERS": "-",
-        "ANDROID_USE_AD_ID": "true"
+        "ANDROID_USE_AD_ID": "true",
+        "IOS_CAS_SOLUTIONS": "-",
+        "IOS_CAS_ADAPTERS": "-",
+        "IOS_USER_TRACKING_USAGE": "Your data will remain confidential and will only be used to provide you a better and personalised ad experience"
       }
     },
     "platforms": [

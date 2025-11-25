@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-const CAS_VERSION = '4.4.2';
+const CAS_VERSION = '4.5.0';
+const CAS_ANDROID_FIX = '.2';
 const POD_PREFIX = "pod 'CleverAdsSolutions-SDK/";
 const CAS_CLASSPATH = "classpath 'com.cleveradssolutions:gradle-plugin:";
 
@@ -112,7 +113,7 @@ module.exports = {
       .filter((line) => !line.includes(CAS_CLASSPATH));
 
     let classpathIndex = gradle.findLastIndex((line) => line.includes('classpath'));
-    let newLine = '        ' + CAS_CLASSPATH + CAS_VERSION + "' // from cordova-plugin-casai";
+    let newLine = '        ' + CAS_CLASSPATH + CAS_VERSION + CAS_ANDROID_FIX + "' // from cordova-plugin-casai";
     gradle.splice(classpathIndex + 1, 0, newLine);
 
     fs.writeFileSync(gradlePath, gradle.join('\n'), 'utf8');
