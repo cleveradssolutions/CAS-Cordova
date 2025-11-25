@@ -54,11 +54,6 @@ class CASScreenAdManager: NSObject {
             return
         }
 
-        guard ad.isAdLoaded else {
-            didFailToPresentWithError(AdError.notReady)
-            return
-        }
-
         // Present depending on type
         if let rewarded = ad as? CASRewarded {
             isUserEarnReward = false
