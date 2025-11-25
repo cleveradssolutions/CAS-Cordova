@@ -1,7 +1,14 @@
 route('#/rewarded', function (root) {
   renderTemplate('tmpl-rewarded', root);
 
+  function onRewardedDestroyClicked() {
+    casai.rewardedAd.destroy();
+    console.log('Rewarded Ad destroy()');
+  }
+
   function onRewardedLoadClicked() {
+    window.onExamplePageClosed = onRewardedDestroyClicked;
+
     casai.rewardedAd
       .load({ autoReload: true })
       .then(function () {
@@ -23,10 +30,6 @@ route('#/rewarded', function (root) {
       .catch(function (e) {
         console.log('Rewarded Ad failed to show: ' + e.message);
       });
-  }
-  function onRewardedDestroyClicked() {
-    casai.rewardedAd.destroy();
-    console.log('Rewarded Ad destroy()');
   }
 
   document.getElementById('rLoad').onclick = onRewardedLoadClicked;

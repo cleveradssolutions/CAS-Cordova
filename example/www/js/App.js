@@ -23,6 +23,8 @@
   }
   document.addEventListener('deviceready', onDeviceReady, false);
 
+  window.onExamplePageClosed = null;
+
   function renderTemplate(id, root) {
     const tpl = document.getElementById(id);
     root.innerHTML = '';
@@ -37,6 +39,15 @@
     location.hash = path;
   }
   function render() {
+    if (typeof window.onExamplePageClosed === 'function') {
+      try {
+        window.onExamplePageClosed();
+      } catch (e) {
+        console.warn('Example cleanup failed', e);
+      }
+      window.onExamplePageClosed = null;
+    }
+
     const root = document.getElementById('root');
     const path = location.hash || '#/menu';
     (routes[path] || routes['#/menu'])(root);

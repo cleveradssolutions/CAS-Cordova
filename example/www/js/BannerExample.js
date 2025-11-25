@@ -4,6 +4,8 @@ route('#/banner', function (root) {
   var currentPos = casai.Position.BOTTOM_CENTER;
 
   function onBannerLoadClicked() {
+    window.onExamplePageClosed = onBannerDestroyClicked;
+
     casai.bannerAd
       .load({
         adSize: casai.Size.SMART,

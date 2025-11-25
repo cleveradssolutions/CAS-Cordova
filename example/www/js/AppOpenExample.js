@@ -1,7 +1,14 @@
 route('#/appopen', function (root) {
   renderTemplate('tmpl-appopen', root);
 
+  function onAppOpenDestroyClicked() {
+    casai.appOpenAd.destroy();
+    console.log('AppOpen Ad destroy()');
+  }
+
   function onAppOpenLoadClicked() {
+    window.onExamplePageClosed = onAppOpenDestroyClicked;
+
     casai.appOpenAd
       .load({
         autoReload: true,
@@ -23,10 +30,6 @@ route('#/appopen', function (root) {
       .catch(function (e) {
         console.log('AppOpen Ad failed to show: ' + e.message);
       });
-  }
-  function onAppOpenDestroyClicked() {
-    casai.appOpenAd.destroy();
-    console.log('AppOpen Ad destroy()');
   }
 
   document.getElementById('oLoad').onclick = onAppOpenLoadClicked;

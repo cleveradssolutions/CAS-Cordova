@@ -1,7 +1,14 @@
 route('#/interstitial', function (root) {
   renderTemplate('tmpl-interstitial', root);
 
+  function onInterstitialDestroyClicked() {
+    casai.interstitialAd.destroy();
+    console.log('Interstitial Ad destroy()');
+  }
+
   function onInterstitialLoadClicked() {
+    window.onExamplePageClosed = onInterstitialDestroyClicked;
+
     casai.interstitialAd
       .load({
         autoReload: true,
@@ -23,10 +30,6 @@ route('#/interstitial', function (root) {
       .catch(function (e) {
         console.log('Interstitial Ad failed to show: ' + e.message);
       });
-  }
-  function onInterstitialDestroyClicked() {
-    casai.interstitialAd.destroy();
-    console.log('Interstitial Ad destroy()');
   }
 
   document.getElementById('iLoad').onclick = onInterstitialLoadClicked;

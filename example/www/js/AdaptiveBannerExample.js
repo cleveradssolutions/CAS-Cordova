@@ -1,7 +1,14 @@
 route('#/adaptive', function (root) {
   renderTemplate('tmpl-adaptive', root);
 
+  function onAdaptiveBannerDestroyClicked() {
+    casai.bannerAd.destroy();
+    console.log('Adaptive Banner Ad destroy()');
+  }
+
   function onAdaptiveBannerLoadClicked() {
+    window.onExamplePageClosed = onAdaptiveBannerDestroyClicked;
+
     casai.bannerAd
       .load({
         adSize: casai.Size.ADAPTIVE,
@@ -23,11 +30,6 @@ route('#/adaptive', function (root) {
   function onAdaptiveBannerHideClicked() {
     casai.bannerAd.hide();
     console.log('Adaptive Banner Ad hide()');
-  }
-
-  function onAdaptiveBannerDestroyClicked() {
-    casai.bannerAd.destroy();
-    console.log('Adaptive Banner Ad destroy()');
   }
 
   document.getElementById('aLoad').onclick = onAdaptiveBannerLoadClicked;

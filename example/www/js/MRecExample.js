@@ -1,7 +1,14 @@
 route('#/mrec', function (root) {
   renderTemplate('tmpl-mrec', root);
 
+  function onMrecDestroyClicked() {
+    casai.mrecAd.destroy();
+    console.log('MREC Ad destroy()');
+  }
+
   function onMrecLoadClicked() {
+    window.onExamplePageClosed = onMrecDestroyClicked;
+
     casai.mrecAd
       .load({
         autoReload: true,
@@ -23,10 +30,6 @@ route('#/mrec', function (root) {
   function onMrecHideClicked() {
     casai.mrecAd.hide();
     console.log('MREC Ad hide()');
-  }
-  function onMrecDestroyClicked() {
-    casai.mrecAd.destroy();
-    console.log('MREC Ad destroy()');
   }
 
   document.getElementById('mLoad').onclick = onMrecLoadClicked;
