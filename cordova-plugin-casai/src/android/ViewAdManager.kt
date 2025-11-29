@@ -1,10 +1,10 @@
 package com.cleveradssolutions.plugin.cordova
 
-import android.app.Activity
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.util.DisplayMetrics
-import android.view.DisplayCutout
+import android.util.Size
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +12,9 @@ import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.annotation.MainThread
+import androidx.core.view.OnApplyWindowInsetsListener
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.cleveradssolutions.sdk.AdContentInfo
 import com.cleveradssolutions.sdk.AdFormat
 import com.cleveradssolutions.sdk.OnAdImpressionListener
@@ -38,19 +41,26 @@ private const val MIDDLE_RIGHT = 8
 class ViewAdManager(
     private val plugin: CASMobileAds,
     private val adFormat: AdFormat
-) : AdViewListener, OnAdImpressionListener {
+) : AdViewListener, OnAdImpressionListener,
+    OnApplyWindowInsetsListener {
 
     private var bannerView: CASBannerView? = null
 
     private val isVisible = AtomicBoolean(false)
+    private val isRefreshRequired = AtomicBoolean(false)
     private var desiredPosition: Int = BOTTOM_CENTER
     private var offsetXdp: Int = 0
     private var offsetYdp: Int = 0
-    private var pendingLoadPromise: CallbackContext? = null
+    private var loadCallback: CallbackContext? = null
 
-    private var sizeCode: String = "B"
-    private var maxWdp: Int = 0
-    private var maxHdp: Int = 0
+    private var adSizeCode: Char = 'B'
+    private var maxAdWidthDP: Int = 0
+    private var maxAdHeightDP: Int = 0
+
+    private var safeLeft = 0
+    private var safeTop = 0
+    private var safeRight = 0
+    private var safeBottom = 0
 
     private val showTask = Runnable {
         bannerView?.let {
@@ -63,14 +73,40 @@ class ViewAdManager(
         bannerView?.visibility = View.GONE
     }
 
+    fun resolveAdSize(sizeCode: Char, maxWdp: Int, maxHdp: Int): AdSize {
+        this.adSizeCode = sizeCode
+        this.maxAdWidthDP = maxWdp
+        this.maxAdHeightDP = maxHdp
+
+        return when (sizeCode) {
+            'B' -> AdSize.BANNER
+            'L' -> AdSize.LEADERBOARD
+            'S' -> AdSize.getSmartBanner(plugin.cordova.context)
+            'A', 'I' -> {
+                val screenSize = getScreenSizeDp()
+                val width = if (maxWdp > 0) maxWdp.coerceAtMost(screenSize.width)
+                else screenSize.width
+                if (sizeCode == 'I') {
+                    val height = if (maxHdp > 0) maxHdp.coerceAtMost(screenSize.height)
+                    else screenSize.height
+                    AdSize.getInlineBanner(width, height)
+                } else {
+                    AdSize.getAdaptiveBanner(plugin.cordova.context, width)
+                }
+            }
+
+            else -> AdSize.BANNER
+        }
+    }
+
     fun loadBanner(
         adSize: AdSize,
         autoload: Boolean,
         refreshSeconds: Int,
         promise: CallbackContext
     ) {
-        pendingLoadPromise?.error(plugin.cancelledLoadError(adFormat))
-        pendingLoadPromise = promise
+        loadCallback?.error(plugin.cancelledLoadError(adFormat))
+        loadCallback = promise
 
         CASHandler.main {
             val view = bannerView ?: run {
@@ -92,6 +128,10 @@ class ViewAdManager(
                     val parent = plugin.webView.view.parent as ViewGroup
                     parent.addView(newView, layoutParams)
                 }
+
+                // Listening window insets to render ad in safe area
+                ViewCompat.setOnApplyWindowInsetsListener(newView, this)
+                ViewCompat.requestApplyInsets(newView)
 
                 newView
             }
@@ -128,16 +168,16 @@ class ViewAdManager(
         }
         bannerView = null
         isVisible.set(false)
-        pendingLoadPromise = null
+        loadCallback = null
         callback.success()
     }
 
     override fun onAdViewLoaded(view: CASBannerView) {
         view.layoutParams = buildLayoutParams(view)
 
-        plugin.emitEvent(PluginEvents.LOADED, plugin.adInfoJson(adFormat))
-        pendingLoadPromise?.success()
-        pendingLoadPromise = null
+        plugin.emitEvent(PluginEvents.LOADED, adFormat)
+        loadCallback?.success()
+        loadCallback = null
     }
 
     override fun onAdViewFailed(view: CASBannerView, error: AdError) {
@@ -145,75 +185,88 @@ class ViewAdManager(
     }
 
     private fun onAdViewFailed(error: AdError) {
-        val json = plugin.errorJson(adFormat, error)
-        plugin.emitEvent(PluginEvents.LOAD_FAILED, json)
-        pendingLoadPromise?.error(json.toString())
-        pendingLoadPromise = null
+        plugin.emitErrorEvent(PluginEvents.LOAD_FAILED, adFormat, error, loadCallback)
+        loadCallback = null
     }
 
     override fun onAdViewClicked(view: CASBannerView) {
-        plugin.emitEvent(PluginEvents.CLICKED, plugin.adInfoJson(adFormat))
+        plugin.emitEvent(PluginEvents.CLICKED, adFormat)
     }
 
     override fun onAdImpression(ad: AdContentInfo) {
         plugin.emitImpressionEvent(adFormat, ad)
     }
 
-    @MainThread
-    fun onConfigurationChanged() {
-        val view = bannerView ?: return
-        if (sizeCode == "A" || sizeCode == "I") {
-            view.size = resolveAdSize(sizeCode, maxWdp, maxHdp)
+    fun onConfigurationChanged(configuration: Configuration) {
+        // When the screen orientation changes, the screen insets are calculated later.
+        // So, we need to wait for the onApplyWindowInsets callback to compute the new size
+        // and position.
+        isRefreshRequired.set(bannerView != null)
+
+        // But if the window insets are zero, then onApplyWindowInsets will not be called.
+        if (safeTop == 0 && safeBottom == 0 && safeRight == 0 && safeLeft == 0) {
+            onWindowInsetsChanged()
         }
+    }
+
+    override fun onApplyWindowInsets(view: View, insets: WindowInsetsCompat): WindowInsetsCompat {
+        val safe = insets.getInsets(
+            WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout()
+        )
+        safeTop = safe.top
+        safeBottom = safe.bottom
+        safeRight = safe.right
+        safeLeft = safe.left
+
+        onWindowInsetsChanged()
+        return insets
+    }
+
+    private fun onWindowInsetsChanged() {
+        val view = bannerView ?: return
+        // Refresh adaptive ad size after configuration changed only.
+        if (isRefreshRequired.getAndSet(false)) {
+            if (adSizeCode == 'A' || adSizeCode == 'I') {
+                view.size = resolveAdSize(adSizeCode, maxAdWidthDP, maxAdHeightDP)
+            }
+        }
+        // Refresh ad position in any case
         view.layoutParams = buildLayoutParams(view)
     }
 
-    fun resolveAdSize(sizeCode: String, maxWdp: Int, maxHdp: Int): AdSize {
-        this.sizeCode = sizeCode
-        this.maxWdp = maxWdp
-        this.maxHdp = maxHdp
-
-        return when (sizeCode) {
-            "L" -> AdSize.LEADERBOARD
-            "S" -> AdSize.getSmartBanner(plugin.cordova.context)
-            "A", "I" -> {
-                val (screenWdp, screenHdp) = getScreenDp()
-                val w = if (maxWdp > 0) maxWdp.coerceAtMost(screenWdp) else screenWdp
-                if (sizeCode == "I") {
-                    val h = if (maxHdp > 0) maxHdp.coerceAtMost(screenHdp) else screenHdp
-                    AdSize.getInlineBanner(w, h)
-                } else {
-                    AdSize.getAdaptiveBanner(plugin.cordova.context, w)
-                }
-            }
-
-            else -> AdSize.BANNER
-        }
-    }
-
-    private fun getScreenDp(): Pair<Int, Int> {
-        val windowManager = plugin.cordova.context.getSystemService(WindowManager::class.java)
+    private fun getScreenSizeDp(): Size {
+        val windowManager = plugin.activity?.windowManager
+            ?: plugin.cordova.context.getSystemService(WindowManager::class.java)
 
         val widthPx: Int
         val heightPx: Int
+        val density: Float
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val metrics = windowManager.currentWindowMetrics
             val bounds = metrics.bounds
-            val insets =
-                metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            val insets = metrics.windowInsets.getInsets(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+            )
             widthPx = bounds.width() - insets.left - insets.right
             heightPx = bounds.height() - insets.top - insets.bottom
+
+            density = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+                metrics.density
+            else
+                plugin.cordova.context.resources.displayMetrics.density
         } else {
-            val tmp = DisplayMetrics()
-            windowManager.defaultDisplay.getMetrics(tmp)
-            widthPx = tmp.widthPixels
-            heightPx = tmp.heightPixels
+            val metrics = DisplayMetrics()
+            windowManager.defaultDisplay.getMetrics(metrics)
+            widthPx = metrics.widthPixels
+            heightPx = metrics.heightPixels
+            density = metrics.density
         }
 
-        val density = plugin.cordova.context.resources.displayMetrics.density
-        val wDp = (widthPx.toFloat() / density).roundToInt()
-        val hDp = (heightPx.toFloat() / density).roundToInt()
-        return wDp to hDp
+        return Size(
+            (widthPx.toFloat() / density).roundToInt(),
+            (heightPx.toFloat() / density).roundToInt()
+        )
     }
 
     @MainThread
@@ -227,23 +280,9 @@ class ViewAdManager(
         val offXpx = (offsetXdp * density).roundToInt()
         val offYpx = (offsetYdp * density).roundToInt()
 
-        val decor = (view.context as Activity).window.decorView
+        val decor = plugin.activity?.window?.decorView ?: plugin.webView.view
         val screenW = decor.width
         val screenH = decor.height
-
-        var safeLeft = 0
-        var safeTop = 0
-        var safeRight = 0
-        var safeBottom = 0
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val cutout: DisplayCutout? = decor.rootWindowInsets?.displayCutout
-            if (cutout != null) {
-                safeBottom = cutout.safeInsetBottom
-                safeTop = cutout.safeInsetTop
-                safeLeft = cutout.safeInsetLeft
-                safeRight = cutout.safeInsetRight
-            }
-        }
 
         var adW = (view.size.width * density).roundToInt()
         var adH = (view.size.height * density).roundToInt()
@@ -253,8 +292,6 @@ class ViewAdManager(
                 adH = it.height
             }
         }
-
-        fun clamp(v: Int, min: Int, max: Int) = v.coerceIn(min, max)
 
         when (desiredPosition) {
             TOP_CENTER, TOP_LEFT, TOP_RIGHT -> {
@@ -297,4 +334,6 @@ class ViewAdManager(
 
         return params
     }
+
+    private fun clamp(v: Int, min: Int, max: Int) = v.coerceIn(min, max)
 }

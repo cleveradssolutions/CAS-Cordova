@@ -105,7 +105,6 @@ interface CASMobileAds {
     forceTestAds?: boolean;
     /**
      * Add a test device ID corresponding to test devices which will always request test ads.
-     * List of test devices should be defined before first MediationManager initialized.
      *
      * 1. Run an app with the CAS SDK `initialize()` call.
      * 2. Check the console or logcat output for a message that looks like this:
@@ -115,7 +114,7 @@ interface CASMobileAds {
      */
     testDeviceIds?: string[];
     /**
-     * Sets the debug geography for testing purposes. (Only effective in test sessions.)
+     * Overrides detected geography for testing privacy behavior. (Only effective in test sessions.)
      * @default 'eea'
      */
     debugGeography?: PrivacyGeography;
@@ -123,6 +122,10 @@ interface CASMobileAds {
      * Additional mediation settings.
      */
     mediationExtras?: Record<string, any>;
+    /**
+     * Intended only for frameworks that use Cordova plugins, such as Construct.
+     */
+    overrideFramework?: string;
   }): Promise<InitializationStatus>;
 
   /**
@@ -137,12 +140,14 @@ interface CASMobileAds {
    */
   showConsentFlow(options: {
     /**
-     * Indicates whether to show the consent form only if required.
+     * Indicates whether to show the consent form only if required and the user has not responded previously.
+     * @default false
      */
     ifRequired?: Boolean;
     /**
      * Optional. Sets the debug geography for testing purposes
      * (e.g., to simulate different regions for consent behavior)
+     * @default unknown
      */
     debugGeography?: PrivacyGeography;
   }): Promise<ConsentFlowStatus>;
@@ -197,9 +202,9 @@ interface CASMobileAds {
    * Collect from the device the latitude and longitude coordinates truncated to the
    * hundredths decimal place.
    *
-   * * Collect only if your application already has the relevant end-user permissions.
-   * * Does not collect if the target audience is children.
-   * * Disabled by default.
+   * Collect only if your application already has the relevant end-user permissions.
+   * Does not collect if the target audience is children.
+   * Disabled by default.
    */
   setLocationCollectionEnabled(enabled: boolean): void;
 

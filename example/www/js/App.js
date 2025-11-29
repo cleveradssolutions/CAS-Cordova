@@ -14,7 +14,7 @@
         if (status.error) {
           console.warn('CAS initialize failed:', status.error);
         } else {
-          console.log('CAS initialized:', status);
+          console.log('CAS initialized:', JSON.stringify(status, null, 2));
         }
       });
 

@@ -57,31 +57,27 @@ internal class ScreenAdManager(
     }
 
     override fun onAdLoaded(ad: AdContentInfo) {
-        plugin.emitEvent(PluginEvents.LOADED, plugin.adInfoJson(adFormat))
+        plugin.emitEvent(PluginEvents.LOADED, adFormat)
         loadCallback?.success()
         loadCallback = null
     }
 
     override fun onAdFailedToLoad(format: AdFormat, error: AdError) {
-        val payload = plugin.errorJson(adFormat, error)
-        plugin.emitEvent(PluginEvents.LOAD_FAILED, payload)
-        loadCallback?.error(payload.toString())
+        plugin.emitErrorEvent(PluginEvents.LOAD_FAILED, adFormat, error, loadCallback)
         loadCallback = null
     }
 
     override fun onAdFailedToShow(format: AdFormat, error: AdError) {
-        val payload = plugin.errorJson(adFormat, error)
-        plugin.emitEvent(PluginEvents.SHOW_FAILED, payload)
-        showCallback?.error(payload.toString())
+        plugin.emitErrorEvent(PluginEvents.SHOW_FAILED, adFormat, error, showCallback)
         showCallback = null
     }
 
     override fun onAdShowed(ad: AdContentInfo) {
-        plugin.emitEvent(PluginEvents.SHOWED, plugin.adInfoJson(adFormat))
+        plugin.emitEvent(PluginEvents.SHOWED, adFormat)
     }
 
     override fun onAdClicked(ad: AdContentInfo) {
-        plugin.emitEvent(PluginEvents.CLICKED, plugin.adInfoJson(adFormat))
+        plugin.emitEvent(PluginEvents.CLICKED, adFormat)
     }
 
     override fun onAdImpression(ad: AdContentInfo) {
@@ -89,26 +85,25 @@ internal class ScreenAdManager(
     }
 
     override fun onAdDismissed(ad: AdContentInfo) {
-        val json = plugin.adInfoJson(adFormat)
-        plugin.emitEvent(PluginEvents.DISMISSED, json)
-
         if (hasEarnedReward) {
-            plugin.emitEvent(PluginEvents.REWARD, json)
+            // Call before dismissed event
+            plugin.emitEvent(PluginEvents.REWARD, adFormat)
         }
 
-        val promise = showCallback ?: return
+        plugin.emitEvent(PluginEvents.DISMISSED, adFormat)
+
+        val callback = showCallback ?: return
         showCallback = null
         if (adFormat == AdFormat.REWARDED) {
-            val payload = JSONObject().put("isUserEarnReward", hasEarnedReward)
-            promise.success(payload)
+            callback.success(
+                JSONObject().put("isUserEarnReward", hasEarnedReward)
+            )
         } else {
-            promise.success()
+            callback.success()
         }
     }
 
     override fun onUserEarnedReward(ad: AdContentInfo) {
         hasEarnedReward = true
     }
-
 }
-

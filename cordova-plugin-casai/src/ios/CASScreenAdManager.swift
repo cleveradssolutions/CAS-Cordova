@@ -26,20 +26,20 @@ class CASScreenAdManager: NSObject {
 
     // MARK: - Methods
 
-    func loadAd(_ callbackId: String, autoload: Bool, ad: CASScreenContent) {
-        // Setup delegates
-        ad.delegate = self
-        ad.impressionDelegate = self
-
+    func loadAd(_ callbackId: String, autoload: Bool, ad: CASScreenContent) {
         if loadCallbackId != nil {
             plugin?.sendRejectError(loadCallbackId, format: format)
         }
 
         loadCallbackId = callbackId
-        ad.isAutoloadEnabled = autoload
         adContent = ad
-
+        // Setup delegates
+        ad.delegate = self
+        ad.impressionDelegate = self
         ad.loadAd()
+        
+        // Change autoload after Load to avoid double load call
+        ad.isAutoloadEnabled = autoload
     }
 
     func getAd() -> CASScreenContent? {
@@ -149,12 +149,14 @@ extension CASScreenAdManager: CASScreenContentDelegate {
 
     func screenAdDidDismissContent(_ ad: any CASScreenContent) {
         if isUserEarnReward {
+            // Call before dismissed event
             plugin?.fireEvent(.casai_ad_reward, format: format)
         }
 
         plugin?.fireEvent(.casai_ad_dismissed, format: format)
 
         if let callbackId = showCallbackId {
+            showCallbackId = nil
             if ad is CASRewarded {
                 plugin?.sendOk(
                     callbackId,
@@ -163,8 +165,6 @@ extension CASScreenAdManager: CASScreenContentDelegate {
             } else {
                 plugin?.sendOk(callbackId)
             }
-
-            showCallbackId = nil
         }
     }
 }

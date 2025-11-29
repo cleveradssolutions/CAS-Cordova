@@ -39,7 +39,7 @@ class CASMobileAds : CordovaPlugin() {
     val activity: Activity? get() = cordova.activity
 
     private val banner = ViewAdManager(this, AdFormat.BANNER)
-    private val mediumRectangle = ViewAdManager(this, AdFormat.MEDIUM_RECTANGLE)
+    private val mrec = ViewAdManager(this, AdFormat.MEDIUM_RECTANGLE)
 
     private var interstitial = ScreenAdManager(this, AdFormat.INTERSTITIAL)
     private var rewarded = ScreenAdManager(this, AdFormat.REWARDED)
@@ -51,6 +51,12 @@ class CASMobileAds : CordovaPlugin() {
     override fun pluginInitialize() {
         super.pluginInitialize()
         casId = cordova.context.applicationContext.packageName
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        banner.onConfigurationChanged(newConfig)
+        mrec.onConfigurationChanged(newConfig)
     }
 
     override fun execute(
@@ -116,9 +122,9 @@ class CASMobileAds : CordovaPlugin() {
             "destroyBannerAd" -> banner.destroy(callbackContext)
 
             "loadMRecAd" -> loadMRecAd(data, callbackContext)
-            "showMRecAd" -> mediumRectangle.show(data, callbackContext)
-            "hideMRecAd" -> mediumRectangle.hide(callbackContext)
-            "destroyMRecAd" -> mediumRectangle.destroy(callbackContext)
+            "showMRecAd" -> mrec.show(data, callbackContext)
+            "hideMRecAd" -> mrec.hide(callbackContext)
+            "destroyMRecAd" -> mrec.destroy(callbackContext)
 
             "loadAppOpenAd" -> loadAppOpenAd(data, callbackContext)
             "isAppOpenAdLoaded" -> appOpen.sendIsLoaded(callbackContext)
@@ -168,12 +174,13 @@ class CASMobileAds : CordovaPlugin() {
         pendingInitCallback = callbackContext
 
         val cordovaVersion = args.getString(0)
-        val targetAudience = args.optString(1, null)
-        val showConsentFormIfRequired = args.optBoolean(2, true)
-        val forceTestAds = args.optBoolean(3, false)
-        val testDeviceIds = args.optJSONArray(4)
-        val debugGeography = args.optString(5, null)
-        val mediationExtras = args.optJSONObject(6)
+        val frameworkName = args.getString(1)
+        val targetAudience = args.optString(2)
+        val showConsentForm = args.getBoolean(3)
+        val forceTestAds = args.getBoolean(4)
+        val testDeviceIds = args.optJSONArray(5)
+        val debugGeography = args.optString(6)
+        val mediationExtras = args.optJSONObject(7)
 
         when (targetAudience) {
             "children" -> CAS.settings.taggedAudience = Audience.CHILDREN
@@ -188,17 +195,17 @@ class CASMobileAds : CordovaPlugin() {
             CAS.settings.testDeviceIDs = testDevices
         }
 
-        val consentFlow = ConsentFlow(showConsentFormIfRequired)
+        val consentFlow = ConsentFlow(showConsentForm)
             .withUIContext(activity)
             .withForceTesting(forceTestAds)
-        if (debugGeography != null) {
+        if (debugGeography.isNotEmpty()) {
             consentFlow.withDebugGeography(debugGeoFrom(debugGeography))
         }
 
         val managerBuilder = CAS.buildManager()
             .withCasId(casId)
             .withTestAdMode(forceTestAds)
-            .withFramework("Cordova", cordovaVersion)
+            .withFramework(frameworkName, cordovaVersion)
             .withConsentFlow(consentFlow)
             .withCompletionListener { configuration ->
                 initResult = JSONObject().apply {
@@ -221,7 +228,7 @@ class CASMobileAds : CordovaPlugin() {
     }
 
     private fun showConsentFlow(args: JSONArray, callbackContext: CallbackContext) {
-        val ifRequired = args.optBoolean(0, true)
+        val ifRequired = args.optBoolean(0, false)
         val debugGeography = args.optString(1, null)
 
         val flow = ConsentFlow(ifRequired)
@@ -233,7 +240,6 @@ class CASMobileAds : CordovaPlugin() {
             val type = debugGeoFrom(debugGeography)
             if (type != ConsentFlow.DebugGeography.DISABLED) {
                 flow.withDebugGeography(type)
-                flow.withForceTesting(true)
             }
         }
 
@@ -241,29 +247,29 @@ class CASMobileAds : CordovaPlugin() {
     }
 
     private fun loadBannerAd(args: JSONArray, callbackContext: CallbackContext) {
-        val sizeCode = args.optString(0, "S")
-        val maxWidthDp = args.optInt(1, 0)
-        val maxHeightDp = args.optInt(2, 0)
-        val autoload = args.optBoolean(3, true)
-        val refreshSeconds = args.optInt(4, 30)
+        val sizeCode = args.getString(0)
+        val maxWidthDp = args.getInt(1)
+        val maxHeightDp = args.getInt(2)
+        val autoload = args.getBoolean(3)
+        val refreshInterval = args.getInt(4)
 
         val adSize = banner.resolveAdSize(
-            sizeCode, maxWidthDp, maxHeightDp
+            sizeCode[0], maxWidthDp, maxHeightDp
         )
         banner.loadBanner(
-            adSize, autoload, refreshSeconds, callbackContext
+            adSize, autoload, refreshInterval, callbackContext
         )
     }
 
     private fun loadMRecAd(args: JSONArray, cb: CallbackContext) {
-        val autoload = args.optBoolean(0, true)
-        val refresh = args.optInt(1, 30)
-        mediumRectangle.loadBanner(AdSize.MEDIUM_RECTANGLE, autoload, refresh, cb)
+        val autoload = args.getBoolean(0)
+        val refresh = args.getInt(1)
+        mrec.loadBanner(AdSize.MEDIUM_RECTANGLE, autoload, refresh, cb)
     }
 
     private fun loadAppOpenAd(args: JSONArray, callbackContext: CallbackContext) {
-        val autoload = args.optBoolean(0, false)
-        val autoShow = args.optBoolean(1, false)
+        val autoload = args.getBoolean(0)
+        val autoShow = args.getBoolean(1)
         val ad = appOpen.ad as? CASAppOpen ?: CASAppOpen(casId)
         ad.isAutoshowEnabled = autoShow
         appOpen.loadAd(ad, autoload, callbackContext)
@@ -275,9 +281,9 @@ class CASMobileAds : CordovaPlugin() {
     }
 
     private fun loadInterstitialAd(args: JSONArray, callbackContext: CallbackContext) {
-        val autoload = args.optBoolean(0, false)
-        val autoShow = args.optBoolean(1, false)
-        val minIntervalSec = args.optInt(2, 0)
+        val autoload = args.getBoolean(0)
+        val autoShow = args.getBoolean(1)
+        val minIntervalSec = args.getInt(2)
 
         val ad = interstitial.ad as? CASInterstitial ?: CASInterstitial(casId)
         ad.isAutoshowEnabled = autoShow
@@ -291,7 +297,7 @@ class CASMobileAds : CordovaPlugin() {
     }
 
     private fun loadRewardedAd(args: JSONArray, callbackContext: CallbackContext) {
-        val autoload = args.optBoolean(0, false)
+        val autoload = args.getBoolean(0)
 
         val ad = rewarded.ad as? CASRewarded ?: CASRewarded(casId)
         rewarded.loadAd(ad, autoload, callbackContext)
@@ -302,12 +308,14 @@ class CASMobileAds : CordovaPlugin() {
         ad?.show(activity, rewarded)
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        CASHandler.main {
-            banner.onConfigurationChanged()
-            mediumRectangle.onConfigurationChanged()
-        }
+    fun emitErrorEvent(type: String, format: AdFormat, error: AdError, callback: CallbackContext?) {
+        val json = errorJson(format, error)
+        emitEvent(type, json)
+        callback?.error(json)
+    }
+
+    fun emitEvent(type: String, format: AdFormat) {
+        emitEvent(type, JSONObject().put("format", format.label))
     }
 
     fun emitEvent(type: String, payload: JSONObject) {
@@ -340,15 +348,12 @@ class CASMobileAds : CordovaPlugin() {
         emitEvent(PluginEvents.IMPRESSIONS, json)
     }
 
-    fun adInfoJson(format: AdFormat): JSONObject =
-        JSONObject().put("format", format.label)
-
     fun errorJson(format: AdFormat, error: AdError): JSONObject =
         JSONObject()
             .put("format", format.label)
             .put("code", error.code)
             .put("message", error.message)
 
-    fun cancelledLoadError(format: AdFormat): String =
-        errorJson(format, AdError(499, "Load Promise interrupted by new load call")).toString()
+    fun cancelledLoadError(format: AdFormat): JSONObject =
+        errorJson(format, AdError(499, "Load Promise interrupted by new load call"))
 }

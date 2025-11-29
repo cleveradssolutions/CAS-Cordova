@@ -4,7 +4,7 @@ route('#/banner', function (root) {
   var currentPos = casai.Position.BOTTOM_CENTER;
 
   function onBannerLoadClicked() {
-    window.onExamplePageClosed = onBannerDestroyClicked;
+    window.onExamplePageClosed = onBannerExamplePageClosed;
 
     casai.bannerAd
       .load({
@@ -50,4 +50,57 @@ route('#/banner', function (root) {
       onBannerPositionChanged(btn);
     };
   });
+
+  // MARK: Optional Document Events
+
+  /**
+   * @param {CustomEvent<AdInfoEvent} event
+   */
+  function onAdLoadedEvent(event) {
+    if (event.format == casai.Format.BANNER) {
+      console.log('(Event) Banner Ad loaded');
+    }
+  }
+
+  /**
+   * @param {AdErrorEvent} event
+   */
+  function onAdFailedToLoadEvent(event) {
+    if (event.format == casai.Format.BANNER) {
+      console.log('(Event) Banner Ad failed to load: ' + event.message);
+    }
+  }
+
+  /**
+   * @param {AdInfoEvent} event
+   */
+  function onAdClickedEvent(event) {
+    if (event.format == casai.Format.BANNER) {
+      console.log('(Event) Banner Ad clicked');
+    }
+  }
+
+  /**
+   * @param {AdContentInfoEvent} event
+   */
+  function onAdImpressionEvent(event) {
+    if (event.format == casai.Format.BANNER) {
+      console.log('(Event) Banner Ad impression from ' + event.sourceName);
+    }
+  }
+
+  document.addEventListener('casai_ad_loaded', onAdLoadedEvent, false);
+  document.addEventListener('casai_ad_load_failed', onAdFailedToLoadEvent, false);
+  document.addEventListener('casai_ad_clicked', onAdClickedEvent, false);
+  document.addEventListener('casai_ad_impressions', onAdImpressionEvent, false);
+
+  // MARK: Free resources
+
+  function onBannerExamplePageClosed() {
+    onBannerDestroyClicked();
+    document.removeEventListener('casai_ad_loaded', onAdLoadedEvent, false);
+    document.removeEventListener('casai_ad_load_failed', onAdFailedToLoadEvent, false);
+    document.removeEventListener('casai_ad_clicked', onAdClickedEvent, false);
+    document.removeEventListener('casai_ad_impressions', onAdImpressionEvent, false);
+  }
 });

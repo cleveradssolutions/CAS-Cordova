@@ -1,100 +1,120 @@
 'use strict';
 
-const notSupportedError = { message: 'Not supported', code: 0 };
+const notSupportedError = { message: 'Platform not supported', code: 0, format: 'AppOpen' };
+
+function createEvent(name, format) {
+  let event = new Event(name);
+  event.format = format;
+  event.message = notSupportedError.message
+  event.code = notSupportedError.code;
+  return event;
+}
+
+function fireErrorEvent(name, format, error) {
+  document.dispatchEvent(createEvent(name, format));
+  error(newError);
+}
 
 const CASMobileAds = {
   initialize(success, error, args) {
-    error(notSupportedError);
+    success({
+      error: notSupportedError.message,
+      isConsentRequired: false,
+      consentFlowStatus: 'Unknown',
+    });
   },
   showConsentFlow(success, error, args) {
-    error(notSupportedError);
+    success('Unknown');
   },
   getSDKVersion(success, error, args) {
-    error(notSupportedError);
+    success(notSupportedError.message);
   },
   setDebugLoggingEnabled(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   setAdSoundsMuted(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   setUserAge(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   setUserGender(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   setAppKeywords(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   setAppContentUrl(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   setLocationCollectionEnabled(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   setTrialAdFreeInterval(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   loadBannerAd(success, error, args) {
-    error(notSupportedError);
+    fireErrorEvent('casai_ad_load_failed', 'Banner', error);
   },
   showBannerAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   hideBannerAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   destroyBannerAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   loadMRecAd(success, error, args) {
-    error(notSupportedError);
+    fireErrorEvent('casai_ad_load_failed', 'MREC', error);
   },
   showMRecAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   hideMRecAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   destroyMRecAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   loadAppOpenAd(success, error, args) {
-    error(notSupportedError);
+    fireErrorEvent('casai_ad_load_failed', 'AppOpen', error);
   },
   isAppOpenAdLoaded(success, error, args) {
-    error(notSupportedError);
+    success(false);
   },
   showAppOpenAd(success, error, args) {
-    error(notSupportedError);
+    fireErrorEvent('casai_ad_show_failed', 'AppOpen', error);
   },
   destroyAppOpenAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   loadInterstitialAd(success, error, args) {
-    error(notSupportedError);
+    fireErrorEvent('casai_ad_load_failed', 'Interstitial', error);
   },
   isInterstitialAdLoaded(success, error, args) {
-    error(notSupportedError);
+    success(false);
   },
   showInterstitialAd(success, error, args) {
-    error(notSupportedError);
+    fireErrorEvent('casai_ad_show_failed', 'Interstitial', error);
   },
   destroyInterstitialAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
   loadRewardedAd(success, error, args) {
-    error(notSupportedError);
+    fireErrorEvent('casai_ad_load_failed', 'Rewarded', error);
   },
   isRewardedAdLoaded(success, error, args) {
-    error(notSupportedError);
+    success(false);
   },
   showRewardedAd(success, error, args) {
-    error(notSupportedError);
+    document.dispatchEvent(createEvent('casai_ad_showed', 'Rewarded'));
+    document.dispatchEvent(createEvent('casai_ad_reward', 'Rewarded'));
+    document.dispatchEvent(createEvent('casai_ad_dismissed', 'Rewarded'));
+    success();
   },
   destroyRewardedAd(success, error, args) {
-    error(notSupportedError);
+    success();
   },
 };
 

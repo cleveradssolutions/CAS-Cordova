@@ -24,8 +24,8 @@ class CASViewAdManager: NSObject {
 
     // persist JS banner settings
     private var sizeString: String = "B"
-    private var maxWidth: Double?
-    private var maxHeight: Double?
+    private var maxWidth: Int = 0
+    private var maxHeight: Int = 0
 
     // constraints
     private var constraintX: NSLayoutConstraint?
@@ -53,7 +53,39 @@ class CASViewAdManager: NSObject {
         plugin = nil
     }
 
-    // MARK: - Public API
+    func resolveAdSize(
+        _ stringCode: String,
+        maxWidth: Int,
+        maxHeight: Int
+    ) -> AdSize {
+        sizeString = stringCode
+        self.maxWidth = maxWidth
+        self.maxHeight = maxHeight
+
+        let code = stringCode.uppercased()
+        switch code {
+        case "L":
+            return .leaderboard
+        case "S":
+            return .getSmartBanner()
+        case "A", "I":
+            var width = UIScreen.main.bounds.width
+            if maxWidth > 0 {
+                width = min(CGFloat(maxWidth), width)
+            }
+            if code == "I" {
+                var height = UIScreen.main.bounds.height
+                if maxHeight > 0 {
+                    height = min(CGFloat(maxHeight), height)
+                }
+                return .getInlineBanner(width: width, maxHeight: height)
+            } else {
+                return .getAdaptiveBanner(forMaxWidth: width)
+            }
+        default:
+            return .banner
+        }
+    }
 
     func loadAd(
         _ adSize: AdSize,
@@ -133,17 +165,15 @@ class CASViewAdManager: NSObject {
     }
 
     /// Show banner (position, offsetX, offsetY optional)
-    /// args: [ positionIndex: Int?, offsetX: Int?, offsetY: Int? ]
+    /// args: [ positionIndex: Int, offsetX: Int, offsetY: Int ]
     func showBannerAd(_ command: CDVInvokedUrlCommand) {
-        let posIndex = command.arguments.first as? Int ?? Position.bottomCenter.rawValue
-        let offsetX =
-            command.arguments.count > 1 ? (command.arguments[1] as? Int ?? 0) : 0
-        let offsetY =
-            command.arguments.count > 2 ? (command.arguments[2] as? Int ?? 0) : 0
+        let posIndex = command.arguments[0] as! NSNumber
+        let offsetX = command.arguments[1] as! NSNumber
+        let offsetY = command.arguments[2] as! NSNumber
 
-        activePosition = Position(rawValue: posIndex) ?? .bottomCenter
-        horizontalOffset = offsetX
-        verticalOffset = offsetY
+        activePosition = Position(rawValue: posIndex.intValue) ?? .bottomCenter
+        horizontalOffset = offsetX.intValue
+        verticalOffset = offsetY.intValue
         isHidden = false
 
         if bannerView != nil {
@@ -209,43 +239,6 @@ class CASViewAdManager: NSObject {
                 maxWidth: maxWidth,
                 maxHeight: maxHeight
             )
-        }
-    }
-
-    func resolveAdSize(
-        _ stringCode: String,
-        maxWidth: Double?,
-        maxHeight: Double?
-    ) -> AdSize {
-        sizeString = stringCode
-        self.maxWidth = maxWidth
-        self.maxHeight = maxHeight
-
-        // For width
-        var width = UIScreen.main.bounds.width
-        if let maxWidth, maxWidth > 0 {
-            width = min(CGFloat(maxWidth), width)
-        }
-
-        // For height
-        var height = UIScreen.main.bounds.height
-        if let maxHeight, maxHeight > 0 {
-            height = min(CGFloat(maxHeight), height)
-        }
-
-        switch stringCode.uppercased() {
-        case "B":
-            return .banner
-        case "L":
-            return .leaderboard
-        case "A":
-            return .getAdaptiveBanner(forMaxWidth: width)
-        case "I":
-            return .getInlineBanner(width: width, maxHeight: height)
-        case "S":
-            return .getSmartBanner()
-        default:
-            return .banner
         }
     }
 

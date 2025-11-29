@@ -28,17 +28,11 @@ const nativePromise = function nativePromise(name, params) {
 
 var bannerAd = {
   load: function ({ adSize, maxWidth, maxHeight, autoReload, refreshInterval }) {
-    return nativePromise('loadBannerAd', [
-      adSize ?? 'S',
-      maxWidth,
-      maxHeight,
-      autoReload ?? true,
-      refreshInterval ?? 30,
-    ]);
+    return nativePromise('loadBannerAd', [adSize ?? 'S', maxWidth ?? 0, maxHeight ?? 0, autoReload ?? true, refreshInterval ?? 30]);
   },
 
   show: function ({ position, offsetX, offsetY }) {
-    nativeCall('showBannerAd', [position, offsetX ?? 0, offsetY ?? 0]);
+    nativeCall('showBannerAd', [position ?? 3, offsetX ?? 0, offsetY ?? 0]);
   },
 
   hide: function () {
@@ -55,7 +49,7 @@ var mrecAd = {
   },
 
   show: function ({ position, offsetX, offsetY }) {
-    nativeCall('showMRecAd', [position, offsetX ?? 0, offsetY ?? 0]);
+    nativeCall('showMRecAd', [position ?? 3, offsetX ?? 0, offsetY ?? 0]);
   },
 
   hide: function () {
@@ -148,15 +142,24 @@ var casai = {
     MIDDLE_RIGHT: 8,
   },
 
-  initialize: function ({ targetAudience, showConsentFormIfRequired, forceTestAds, testDeviceIds, debugGeography, mediationExtras }) {
+  initialize: function ({
+    targetAudience,
+    showConsentFormIfRequired,
+    forceTestAds,
+    testDeviceIds,
+    debugGeography,
+    mediationExtras,
+    overrideFramework,
+  }) {
     return nativePromise('initialize', [
       /* 0 */ cordova.version,
-      /* 1 */ targetAudience,
-      /* 2 */ showConsentFormIfRequired ?? true,
-      /* 3 */ forceTestAds ?? false,
-      /* 4 */ testDeviceIds ?? [],
-      /* 5 */ debugGeography ?? 'eea',
-      /* 6 */ mediationExtras ?? {},
+      /* 1 */ overrideFramework ?? 'Cordova',
+      /* 2 */ targetAudience,
+      /* 3 */ showConsentFormIfRequired ?? true,
+      /* 4 */ forceTestAds ?? false,
+      /* 5 */ testDeviceIds,
+      /* 6 */ debugGeography ?? 'eea',
+      /* 7 */ mediationExtras,
     ]);
   },
 

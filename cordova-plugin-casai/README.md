@@ -12,7 +12,7 @@ Found a bug? Have a feature request or suggestion?
 Please open an issue using [GitHub’s Issue Tracker](https://github.com/cleveradssolutions/CAS-Cordova/issues).
 
 ## Native SDK Repositories
-This React Native plugin is built on top of the official native CAS.AI SDKs:
+This Cordova plugin is built on top of the official native CAS.AI SDKs:
 - [CAS.AI Android SDK (GitHub)](https://github.com/cleveradssolutions/CAS-Android)
   Native Android SDK for Java and Kotlin applications.
 - [CAS.AI iOS SDK (GitHub)](https://github.com/cleveradssolutions/CAS-iOS)
