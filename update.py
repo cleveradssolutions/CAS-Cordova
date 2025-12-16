@@ -3,15 +3,17 @@ import re
 import shutil
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.5.1"
-_CAS_VERSION = "4.5.0"
+_PLUGIN_VERSION = "4.5.2"
+_CAS_VERSION = "4.5.2"
 
 # https://cordova.apache.org/docs/en/12.x-2025.01/guide/hybrid/plugins/index.html#publishing-plugins
 
 # Plugin publishing flow (from the project root):
-# python3 update.py
-# cd cordova-plugin-casai
-# npm run release
+# $ python3 update.py
+# $ cd cordova-plugin-casai
+# add to ~/.npmrc file access token: //registry.npmjs.org/:_authToken=
+# $ npm login
+# $ npm run release
 
 
 def update_version_in_file(file_path, prefix, suffix):

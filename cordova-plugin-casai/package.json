@@ -1,10 +1,13 @@
 {
   "name": "cordova-plugin-casai",
-  "version": "4.5.1",
+  "version": "4.5.2",
   "description": "The CAS.AI Cordova plugin allows you to easily monetize your apps for iOS and Android using lot of Ads SDKs in mediation.",
   "author": "Clever Ads Solutions LTD <support@cas.ai> (https://cas.ai)",
   "license": "Apache-2.0",
-  "repository": "github:cleveradssolutions/CAS-Cordova",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cleveradssolutions/CAS-Cordova.git"
+  },
   "bugs": {
     "url": "https://github.com/cleveradssolutions/CAS-Cordova/issues"
   },
@@ -31,6 +34,7 @@
   },
   "scripts": {
     "try": "npm publish --dry-run",
+    "login": "npm login",
     "release": "npm publish --access public"
   }
 }

@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-const CAS_VERSION = '4.5.0';
-const CAS_ANDROID_FIX = '.2';
+const CAS_VERSION = '4.5.2';
+const CAS_ANDROID_FIX = '';
 const POD_PREFIX = "pod 'CleverAdsSolutions-SDK/";
 const CAS_CLASSPATH = "classpath 'com.cleveradssolutions:gradle-plugin:";
 
