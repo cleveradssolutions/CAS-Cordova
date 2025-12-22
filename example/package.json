@@ -7,7 +7,9 @@
   "scripts": {
     "plugin": "cordova plugin rm cordova-plugin-casai --nosave && cordova plugin add ../cordova-plugin-casai --link --save",
     "android": "cordova platform rm android --nosave && cordova platform add android && cordova prepare android --verbose",
-    "ios": "cordova platform rm ios --nosave && cordova platform add ios && cordova prepare ios --verbose"
+    "ios": "cordova platform rm ios --nosave && cordova platform add ios && cordova prepare ios --verbose",
+    "test:android": "npm run android && cordova build android",
+    "test:ios": "npm run ios && cordova build ios --device --buildFlag=\"-allowProvisioningUpdates\""
   },
   "keywords": [
     "ecosystem:cordova"

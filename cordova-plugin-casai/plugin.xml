@@ -21,7 +21,7 @@
     xmlns:rim="http://www.blackberry.com/ns/widgets"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="cordova-plugin-casai"
-    version="4.5.2">
+    version="4.5.4">
     <name>CAS Mobile Ads</name>
     <description>The CAS.AI Cordova plugin allows you to easily monetize your apps for iOS and Android using lot of Ads SDKs in mediation.</description>
     <license>Apache 2.0 License</license>
@@ -50,7 +50,7 @@
         <source-file src="src/android/CASMobileAds.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <source-file src="src/android/ScreenAdManager.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <source-file src="src/android/ViewAdManager.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
-        <framework src="com.cleveradssolutions:cas-sdk:4.5.2" />
+        <framework src="com.cleveradssolutions:cas-sdk:4.5.4" />
         <framework src="src/android/casplugin.gradle" custom="true" type="gradleReference" />
     </platform>
     <platform name="ios">
@@ -83,7 +83,7 @@
                 <source url="https://github.com/cleveradssolutions/CAS-Specs.git"/>
             </config>
             <pods use-frameworks="true">
-                <pod name="CleverAdsSolutions-Base" spec="4.5.2" swift-version="5.0" />
+                <pod name="CleverAdsSolutions-Base" spec="4.5.4" swift-version="5.0" />
             </pods>
         </podspec>
         <config-file target="*-Info.plist" parent="CASAIAppIdentifier">
