@@ -3,8 +3,8 @@ import re
 import shutil
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.5.4"
-_CAS_VERSION = "4.5.4"
+_PLUGIN_VERSION = "4.6.0"
+_CAS_VERSION = "4.6.0"
 
 # Plugin publishing flow (from the project root):
 # $ python3 update.py
@@ -13,7 +13,7 @@ _CAS_VERSION = "4.5.4"
 # $ npm run test:ios
 # $ cd ../cordova-plugin-casai
 # add to ~/.npmrc file access token: //registry.npmjs.org/:_authToken=
-# $ npm login
+# $ NOT logic, use token from npmrc: npm login
 # $ npm run release
 
 def update_version_in_file(file_path, prefix, suffix):

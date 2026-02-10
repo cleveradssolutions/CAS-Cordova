@@ -18,7 +18,7 @@ module.exports = function (context) {
     lines.push('useAdvertisingId = ' + (useAdId ? 'true' : 'false'));
 
     config.getCASSolutions().forEach((name) => {
-      lines.push(`include${name}Ads = true`);
+      lines.push(`include${name} = true`);
     });
     lines.push('adapters {');
     config.getCASAdapters().forEach((name) => {

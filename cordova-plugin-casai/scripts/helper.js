@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const CAS_VERSION = '4.5.4';
+const CAS_VERSION = '4.6.0';
 const CAS_ANDROID_FIX = '';
 const POD_PREFIX = "pod 'CleverAdsSolutions-SDK/";
 const CAS_CLASSPATH = "classpath 'com.cleveradssolutions:gradle-plugin:";
@@ -43,8 +43,15 @@ module.exports = {
       var result = [];
       if (solutions) {
         solutions = solutions.toLowerCase();
-        if (solutions.indexOf('optimal') >= 0) result.push('Optimal');
-        if (solutions.indexOf('families') >= 0) result.push('Families');
+        if (this.platform == 'android') {
+          if (solutions.indexOf('optimal') >= 0) result.push('OptimalAds');
+          if (solutions.indexOf('families') >= 0) result.push('FamiliesAds');
+          if (solutions.indexOf('tenjin') >= 0) result.push('TenjinSDK');
+        } else {
+          if (solutions.indexOf('optimal') >= 0) result.push('Optimal');
+          if (solutions.indexOf('families') >= 0) result.push('Families');
+          if (solutions.indexOf('tenjin') >= 0) result.push('Tenjin');
+        }
       }
       return result;
     }
