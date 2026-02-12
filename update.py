@@ -3,8 +3,8 @@ import re
 import shutil
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.6.0"
-_CAS_VERSION = "4.6.0"
+_PLUGIN_VERSION = "4.6.2"
+_CAS_VERSION = "4.6.2"
 
 # Plugin publishing flow (from the project root):
 # $ python3 update.py
