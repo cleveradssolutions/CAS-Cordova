@@ -66,8 +66,6 @@ class CASMobileAds: CDVPlugin {
         // /* 6 */ debugGeography ?? 'eea',
         // /* 7 */ mediationExtras,
 
-        var callbackId: String? = command.callbackId
-
         let cordovaVersion = command.arguments[0] as! String
         let frameworkName = command.arguments[1] as! String
         let targetAudience = command.arguments[2] as? String
@@ -82,7 +80,7 @@ class CASMobileAds: CDVPlugin {
                 status: CDVCommandStatus_OK,
                 messageAs: initResponse
             )
-            commandDelegate?.send(result, callbackId: callbackId)
+            commandDelegate?.send(result, callbackId: command.callbackId)
             return
         }
 
@@ -127,6 +125,7 @@ class CASMobileAds: CDVPlugin {
             }
         }
 
+        var callbackId: String? = command.callbackId
         builder.withCompletionHandler { config in
             self.initResponse["error"] = config.error
             self.initResponse["countryCode"] = config.countryCode
@@ -459,12 +458,12 @@ class CASMobileAds: CDVPlugin {
 // MARK: - Cordova Event Bridge
 
 extension CASMobileAds {
-    func sendOk(_ callbackId: String?) {
+    func sendOk(_ callbackId: String) {
         let result = CDVPluginResult(status: CDVCommandStatus_OK)
         commandDelegate?.send(result, callbackId: callbackId)
     }
 
-    func sendOk(_ callbackId: String?, messageAs: String) {
+    func sendOk(_ callbackId: String, messageAs: String) {
         let result = CDVPluginResult(
             status: CDVCommandStatus_OK,
             messageAs: messageAs
@@ -472,7 +471,7 @@ extension CASMobileAds {
         commandDelegate?.send(result, callbackId: callbackId)
     }
 
-    func sendOk(_ callbackId: String?, messageAs: Bool) {
+    func sendOk(_ callbackId: String, messageAs: Bool) {
         let result = CDVPluginResult(
             status: CDVCommandStatus_OK,
             messageAs: messageAs
@@ -480,7 +479,7 @@ extension CASMobileAds {
         commandDelegate?.send(result, callbackId: callbackId)
     }
 
-    func sendOk(_ callbackId: String?, messageAs: [String: Any]) {
+    func sendOk(_ callbackId: String, messageAs: [String: Any]) {
         let result = CDVPluginResult(
             status: CDVCommandStatus_OK,
             messageAs: messageAs
@@ -488,7 +487,7 @@ extension CASMobileAds {
         commandDelegate?.send(result, callbackId: callbackId)
     }
 
-    func sendRejectError(_ callbackId: String?, format: String) {
+    func sendRejectError(_ callbackId: String, format: String) {
         let body: [String: Any] = [
             "format": format,
             "code": 499,
@@ -501,7 +500,7 @@ extension CASMobileAds {
         commandDelegate?.send(result, callbackId: callbackId)
     }
 
-    func sendError(_ callbackId: String?, format: String, error: AdError) {
+    func sendError(_ callbackId: String, format: String, error: AdError) {
         let body: [String: Any] = [
             "format": format,
             "code": error.code.rawValue,

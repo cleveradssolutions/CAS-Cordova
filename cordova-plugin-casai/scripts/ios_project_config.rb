@@ -14,7 +14,7 @@ module CASConfig
     ARG_HELP = '--help'
 
     XC_PROJECT_FILE = '.xcodeproj'
-    SCRIPT_VERSION = '1.5'
+    SCRIPT_VERSION = '1.7'
 
     class << self
         attr_accessor :casId, :project_path, :gad_included, :clean_install
@@ -32,7 +32,9 @@ module CASConfig
                 
                 update_plist(project.get_plist_path()) do |plist|
                     plist.check_sk_ad_networks()
-                    plist.check_google_app_Id(cas_config)
+                    plist.check_att_ad_networks()
+                    plist.check_cas_app_id(casId)
+                    plist.check_google_app_id(cas_config)
                     plist.check_transport_security()
                     plist.check_tracking_usage_description()
                     plist.check_app_bound_domains()
@@ -225,12 +227,22 @@ module CASConfig
         end
 
         def load_sk_ad_networks_set()
-            url = 'https://raw.githubusercontent.com/cleveradssolutions/CAS-iOS/master/SKAdNetworkCompact.txt'
+            url = 'https://raw.githubusercontent.com/cleveradssolutions/CAS-iOS/master/AdNetworkIdentifiers/SKAdNetworkCompact.txt'
             data = load_with_cache(url)
             if data.empty?
                 return set()
             else
                 return data.split("\n").map{|item| item + ".skadnetwork"}.to_set
+            end
+        end
+
+        def load_att_ad_networks_set()
+            url = 'https://raw.githubusercontent.com/cleveradssolutions/CAS-iOS/master/AdNetworkIdentifiers/AdNetworkCompact.txt'
+            data = load_with_cache(url)
+            if data.empty?
+                return set()
+            else
+                return data.split("\n").map{|item| item + ".adattributionkit"}.to_set
             end
         end
 
@@ -304,6 +316,8 @@ module CASConfig
 
         def get_setting(key)
             @mainTarget.build_configurations.each do |config|
+                # not resolve some variables, just remove it, for example $(TARGET_NAME)
+                # prop = config.resolve_build_setting(key, @mainTarget)
                 prop = config.build_settings[key]
                 return prop unless prop.nil? || prop.empty?
             end
@@ -340,6 +354,11 @@ module CASConfig
             if path.start_with?("$(SRCROOT)/")
                 return path["$(SRCROOT)/".length..]
             end
+            if path.start_with?("$(PROJECT_DIR)/")
+                return path["$(PROJECT_DIR)/".length..]
+            end
+            path = path.gsub("$(TARGET_NAME)", @mainTarget.name)
+            path = path.gsub("$(CONFIGURATION)", "Release")
             return path
         end
 
@@ -385,10 +404,13 @@ module CASConfig
     class ProjectPlist
         KEY_SKAD_ARRAY = "SKAdNetworkItems"
         KEY_SKAD = "SKAdNetworkIdentifier"
+        KEY_ATTAD_ARRAY = "AdNetworkIdentifiers"
         KEY_SECURITY = "NSAppTransportSecurity"
         KEY_ALLOWS_LOADS = "NSAllowsArbitraryLoads"
+        KEY_CAS_APP_ID = "CASAIAppIdentifier"
         KEY_GAD_APP_ID = "GADApplicationIdentifier"
         KEY_GAD_DELAY_INIT = "GADDelayAppMeasurementInit"
+        KEY_GAD_AD_VALIDATOR = "GADNativeAdValidatorEnabled"
         KEY_TRACKING_USAGE = "NSUserTrackingUsageDescription"
         KEY_BOUND_DOMAINS = "WKAppBoundDomains"
 
@@ -426,6 +448,30 @@ module CASConfig
             end
         end
 
+        def check_att_ad_networks()
+            requiredIds = CASConfig.load_att_ad_networks_set()
+
+            attAdArray = @plist[KEY_ATTAD_ARRAY]
+            
+            if attAdArray.nil? || CASConfig.clean_install?
+                attAdArray = []
+                @plist[KEY_ATTAD_ARRAY] = attAdArray
+            else
+                attAdArray.each do |item|
+                    requiredIds.delete(item)
+                end
+            end
+            if requiredIds.count > 0
+                requiredIds.each do |item|
+                    attAdArray.push(item)
+                end
+                CASConfig.success("- " + KEY_ATTAD_ARRAY + " has added " + requiredIds.count.to_s + " new items")
+                @is_dirt = true
+            else
+                puts "- " + KEY_ATTAD_ARRAY + " is up-to-date"
+            end
+        end
+
         def check_transport_security
             security = plist[KEY_SECURITY]
             allowLoad = security && security[KEY_ALLOWS_LOADS]
@@ -445,7 +491,21 @@ module CASConfig
             end
         end
 
-        def check_google_app_Id(casConfig)
+        def check_cas_app_id(casId)
+            if casId == "demo"
+                return
+            end
+            currAppId = @plist[KEY_CAS_APP_ID]
+            if currAppId != casId 
+                @plist[KEY_CAS_APP_ID] = casId
+                @is_dirt = true
+                CASConfig.success("- " + KEY_CAS_APP_ID + " has been " + (if currAppId.nil? then "added" else "updated" end))
+            else
+                puts "- " + KEY_CAS_APP_ID + " is up-to-date"
+            end
+        end
+
+        def check_google_app_id(casConfig)
             return unless CASConfig.gad_included?
             requiredAppId = "ca-app-pub-3940256099942544~1458002511"
             unless casConfig.empty?
@@ -456,6 +516,7 @@ module CASConfig
             if currAppId != requiredAppId 
                 @plist[KEY_GAD_APP_ID] = requiredAppId
                 @plist[KEY_GAD_DELAY_INIT] = true
+                @plist[KEY_GAD_AD_VALIDATOR] = false
                 @is_dirt = true
                 CASConfig.success("- " + KEY_GAD_APP_ID + " has been " + (if currAppId.nil? then "added" else "updated" end))
                 puts "   required for Google AdMob network. Use " + ARG_NO_GAD + " option if app doesn't use AdMob"

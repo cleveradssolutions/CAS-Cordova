@@ -3,8 +3,8 @@ import re
 import shutil
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.6.2"
-_CAS_VERSION = "4.6.2"
+_PLUGIN_VERSION = "4.6.3"
+_CAS_VERSION = _PLUGIN_VERSION
 
 # Plugin publishing flow (from the project root):
 # $ python3 update.py
@@ -45,7 +45,7 @@ def update_source_files_from_platform(source: str, target: str, files: list):
         dst = target_dir / filename
 
         if not src.exists():
-            print(f"[!] Файл {src} не існує, пропускаю.")
+            print(f"[!] File not found {src}")
             continue
 
         if not dst.exists():

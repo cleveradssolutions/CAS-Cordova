@@ -27,7 +27,7 @@ class CASScreenAdManager: NSObject {
     // MARK: - Methods
 
     func loadAd(_ callbackId: String, autoload: Bool, ad: CASScreenContent) {
-        if loadCallbackId != nil {
+        if let loadCallbackId = loadCallbackId {
             plugin?.sendRejectError(loadCallbackId, format: format)
         }
 

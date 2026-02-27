@@ -26,16 +26,22 @@ module.exports = function (context) {
     return;
   }
 
-  let projectName = config.getAppName();
-  if (!projectName) {
-    console.error('❌ Invalid config.xml file: Project <name> not found!');
-    return;
-  }
+  let iosPlatformPath = path.join(context.opts.projectRoot, 'platforms', 'ios');
+  var xcodeproj = path.join(iosPlatformPath, 'App.xcodeproj');
 
-  let xcodeproj = path.join(context.opts.projectRoot, 'platforms', 'ios', projectName + '.xcodeproj');
   if (helper.isDirectoryNotFound(xcodeproj)) {
-    console.error('❌ Invalid ios xcodeproj: Not found:\n   ' + xcodeproj);
-    return;
+    // Before Cordova iOS 8.0.0 config.xml name uses as xcodeproj name.
+    let projectName = config.getAppName();
+    if (!projectName) {
+      console.error('❌ Invalid config.xml file: Project <name> not found!');
+      return;
+    }
+
+    xcodeproj = path.join(iosPlatformPath, projectName + '.xcodeproj');
+    if (helper.isDirectoryNotFound(xcodeproj)) {
+      console.error('❌ Invalid ios xcodeproj: Not found:\n   ' + xcodeproj);
+      return;
+    }
   }
 
   const result = spawnSync('ruby', [rubyScript, casId, '--project=' + xcodeproj], {
