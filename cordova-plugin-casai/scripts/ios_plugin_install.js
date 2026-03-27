@@ -4,8 +4,7 @@ const helper = require('./helper');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-module.exports = function (context) {
-  let config = new helper.CASConfig(context, 'ios');
+function updateXcodeProject(context, config) {
   let rubyScript = path.join(context.opts.plugin.dir, 'scripts', 'ios_project_config.rb');
 
   var casId = config.findVariable('IOS_CAS_ID');
@@ -60,4 +59,14 @@ module.exports = function (context) {
       console.error('CAS Ruby script error status:', result.status);
     }
   }
+}
+
+module.exports = function (context) {
+  try {
+      let config = new helper.CASConfig(context, 'ios');
+      helper.updatePodfile(context, config);
+      updateXcodeProject(context, config);
+    } catch (err) {
+      console.error('❌ CAS iOS Prepare failed:', err.message || err);
+    }
 };

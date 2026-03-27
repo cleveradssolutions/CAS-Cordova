@@ -21,7 +21,7 @@
     xmlns:rim="http://www.blackberry.com/ns/widgets"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="cordova-plugin-casai"
-    version="4.6.3">
+    version="4.6.4">
     <name>CAS Mobile Ads</name>
     <description>The CAS.AI Cordova plugin allows you to easily monetize your apps for iOS and Android using lot of Ads SDKs in mediation.</description>
     <license>Apache 2.0 License</license>
@@ -32,6 +32,9 @@
     <js-module src="www/casai.js" name="CASMobileAds">
         <clobbers target="casai" />
     </js-module>
+    <!-- Hooks for Prepare trigger for all platforms only -->
+    <hook type="before_prepare" src="scripts/ios_prepare.js" />
+    <hook type="before_prepare" src="scripts/android_prepare.js" />
     <platform name="android">
         <!-- Valid values "Optimal" and "Famileis" and "-" for none. -->
         <preference name="ANDROID_CAS_SOLUTIONS" default="-" />
@@ -40,12 +43,14 @@
         <preference name="ANDROID_CAS_ADAPTERS" default="-" />
         <!-- Is allowed Google AD_ID to use. Valid values "true" and "false". -->
         <preference name="ANDROID_USE_AD_ID" default="true" />
-        <hook type="after_plugin_install" src="scripts/android_after_plugin_install.js" />
+        <hook type="after_plugin_install" src="scripts/android_prepare.js" />
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="CASMobileAds" >
                 <param name="android-package" value="com.cleveradssolutions.plugin.cordova.CASMobileAds"/>
                 <param name="onload" value="true" />
             </feature>
+            <preference name="GradlePluginKotlinEnabled" value="true" />
+            <preference name="GradlePluginKotlinVersion" value="2.1.21" />
         </config-file>
         <source-file src="src/android/CASMobileAds.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <source-file src="src/android/ScreenAdManager.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
@@ -65,14 +70,14 @@
         <!-- Required to display the App Tracking Transparency authorization request for accessing the IDFA -->
         <preference name="IOS_USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
         <framework src="AppTrackingTransparency.framework" weak="true" />
-        <hook type="before_compile" src="scripts/ios_before_compile.js" />
-        <hook type="after_plugin_install" src="scripts/ios_after_plugin_install.js" />
-        <hook type="before_plugin_uninstall" src="scripts/ios_before_plugin_uninstall.js" />
+        <hook type="after_plugin_install" src="scripts/ios_plugin_install.js" />
+        <hook type="before_plugin_uninstall" src="scripts/ios_plugin_uninstall.js" />
         <config-file target="config.xml" parent="/*">
             <feature name="CASMobileAds">
                 <param name="ios-package" value="CASMobileAds"/>
                 <param name="onload" value="true" />
             </feature>
+            <!-- <preference name="SwiftVersion" value="5.0" /> -->
         </config-file>
         <source-file src="src/ios/CASMobileAds.swift" />
         <source-file src="src/ios/CASScreenAdManager.swift" />

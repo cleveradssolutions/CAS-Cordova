@@ -1,10 +1,9 @@
 import os
-import re
 import shutil
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.6.3"
-_CAS_VERSION = _PLUGIN_VERSION
+_PLUGIN_VERSION = "4.6.4"
+_CAS_VERSION = "4.6.3"
 
 # Plugin publishing flow (from the project root):
 # $ python3 update.py
@@ -15,6 +14,7 @@ _CAS_VERSION = _PLUGIN_VERSION
 # add to ~/.npmrc file access token: //registry.npmjs.org/:_authToken=
 # $ NOT logic, use token from npmrc: npm login
 # $ npm run release
+
 
 def update_version_in_file(file_path, prefix, suffix):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -91,11 +91,17 @@ update_version_in_file(
     suffix="';"
 )
 update_source_files_from_platform(
-    source="example/platforms/android/app/src/main/java/com/cleveradssolutions/plugin/cordova",
-    target="cordova-plugin-casai/src/android",
+    source=os.path.join("example", "platforms", "android", "app", "src",
+                        "main", "java", "com", "cleveradssolutions", "plugin", "cordova"),
+    target=os.path.join(plugin_dir, "src", "android"),
     files=[
         "CASMobileAds.kt",
         "ScreenAdManager.kt",
         "ViewAdManager.kt"
     ]
+)
+shutil.copy2(
+    src=os.path.join('..', 'CAS-Swift', 'PublicSamplesRepo',
+                     'Script XCodeConfig', 'casconfig.rb'),
+    dst=os.path.join(plugin_dir, "scripts", "ios_project_config.rb")
 )

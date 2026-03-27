@@ -153,7 +153,7 @@ class CASMobileAds: CDVPlugin {
         let ifRequired = command.arguments[0] as? Bool ?? false
         let debugGeography = command.arguments[1] as? String
 
-        let consentFlow = CASConsentFlow(isEnabled: true)
+        let consentFlow = CASConsentFlow()
             .withViewControllerToPresent(viewController)
             .withCompletionHandler { status in
                 self.sendOk(

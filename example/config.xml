@@ -10,9 +10,7 @@
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
     <platform name="android">
-        <preference name="android-targetSdkVersion" value="35" />
-        <preference name="GradlePluginKotlinEnabled" value="true" />
-        <preference name="GradlePluginKotlinVersion" value="2.0.21" />
+        <preference name="android-targetSdkVersion" value="36" />
         <preference name="AndroidEdgeToEdge" value="true" />
         <allow-intent href="market:*" />
     </platform>
@@ -20,9 +18,9 @@
         <allow-intent href="itms:*" />
         <allow-intent href="itms-apps:*" />
         <preference name="deployment-target" value="13.0" />
-        <preference name="SwiftVersion" value="5.0" />
     </platform>
     <plugin name="cordova-plugin-casai" spec="*">
-        <variable name="IOS_CAS_ID" value="demo" />
+        <variable name="IOS_CAS_ADAPTERS" value="-" />
+        <variable name="ANDROID_CAS_ADAPTERS" value="-" />
     </plugin>
 </widget>

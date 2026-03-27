@@ -110,18 +110,16 @@ class CASViewAdManager: NSObject {
                 banner.adSize = adSize
                 banner.isAutoloadEnabled = autoReload
                 banner.refreshInterval = refreshInterval
-                if !autoReload {
-                    banner.loadAd()
-                }
+                banner.loadAd()
                 return
             }
 
             // Create Banner (if not exist)
             let banner = CASBannerView(casID: plugin.casId, size: adSize)
+            banner.isAutoloadEnabled = false
             self.bannerView = banner
             banner.delegate = self
             banner.impressionDelegate = self
-            banner.isAutoloadEnabled = autoReload
             banner.rootViewController = vc
             banner.refreshInterval = refreshInterval
             banner.isHidden = isHidden
@@ -158,7 +156,9 @@ class CASViewAdManager: NSObject {
                 )
             }
 
-            if !autoReload {
+            if autoReload {
+                banner.isAutoloadEnabled = true
+            } else {
                 banner.loadAd()
             }
         }

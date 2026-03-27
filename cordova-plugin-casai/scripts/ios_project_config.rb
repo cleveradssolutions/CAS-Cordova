@@ -11,13 +11,14 @@ module CASConfig
     ARG_PROJECT = '--project='
     ARG_NO_GAD = '--no-gad'
     ARG_CLEAN = '--clean'
+    ARG_IGNORE_ID = '--ignore-id'
     ARG_HELP = '--help'
 
     XC_PROJECT_FILE = '.xcodeproj'
-    SCRIPT_VERSION = '1.7'
+    SCRIPT_VERSION = '2.0'
 
     class << self
-        attr_accessor :casId, :project_path, :gad_included, :clean_install
+        attr_accessor :casId, :project_path, :gad_included, :clean_install, :ignore_id
 
         def config
             Dir.chdir __dir__
@@ -26,14 +27,22 @@ module CASConfig
             end
 
             update_project() do |project|
-                cas_config, cas_config_name = load_configuration()
-                project.check_config_file(cas_config, cas_config_name)
-                project.ensure_ldflags
-                
                 update_plist(project.get_plist_path()) do |plist|
+                    if @casId.empty?
+                        @casId = plist.get_cas_app_id()
+                    end
+                    if @casId.empty? && @require_id
+                        error("[!] You must specify an CAS Id to complete the configuration.")
+                        exit_with_help()
+                    end
+                    
+                    cas_config, cas_config_name = load_configuration()
+                    project.check_config_file(cas_config, cas_config_name)
+                    project.ensure_ldflags
+                
                     plist.check_sk_ad_networks()
                     plist.check_att_ad_networks()
-                    plist.check_cas_app_id(casId)
+                    plist.check_cas_app_id(@casId)
                     plist.check_google_app_id(cas_config)
                     plist.check_transport_security()
                     plist.check_tracking_usage_description()
@@ -80,28 +89,34 @@ module CASConfig
         end
 
         def read_from_args
-            if ARGV.count == 0
-                error("[!] You must specify an CAS Id to complete the configuration.")
-                print_help()
-            end
-            
             @casId = ""
-            @project_path = ""
+            @project_path = ENV['PROJECT_FILE_PATH'].to_s
             @gad_included = true
             @clean_install = false
+            @require_id = true
             
+            if !@project_path.empty? && Pathname.new(@project_path).absolute?
+                Dir.chdir File.dirname(@project_path)
+                @require_id = false
+            end
+
+            if @require_id && ARGV.count == 0
+                error("[!] You must specify an CAS Id to complete the configuration.")
+                exit_with_help()
+            end
+
             ARGV.each do |arg|
                 if arg == ARG_HELP
-                    print_help()
+                    exit_with_help()
                 elsif arg == ARG_NO_GAD
                     @gad_included = false
                 elsif arg == ARG_CLEAN
                     @clean_install = true
+                elsif arg == ARG_IGNORE_ID
+                    @require_id = false
                 elsif arg.start_with?(ARG_PROJECT)
-                    @project_path = sub_between(arg, ARG_PROJECT, ' ')
-                    unless @project_path.end_with?(XC_PROJECT_FILE)
-                        @project_path = @project_path + XC_PROJECT_FILE
-                    end
+                    @project_path = arg.split('=', 2)[1]
+                    @project_path += XC_PROJECT_FILE unless @project_path.end_with?(XC_PROJECT_FILE)
                     if Pathname.new(@project_path).absolute?
                         Dir.chdir File.dirname(@project_path)
                     end
@@ -109,7 +124,7 @@ module CASConfig
                         Dir.chdir File.expand_path('../')
                         unless File.exist?(@project_path)
                             error("[!] Not found project: " + @project_path)
-                            print_help()
+                            exit_with_help()
                         end
                     end
                 elsif !arg.empty? && (arg == 'demo' || arg.scan(/\D/).empty?)
@@ -120,7 +135,7 @@ module CASConfig
                     else
                         error("[!] Invalid CAS Id: " + arg)
                     end
-                    print_help()
+                    exit_with_help()
                 end
             end
         end
@@ -159,7 +174,7 @@ module CASConfig
             puts thin_text("   Powered by ") + colortxt("CAS.ai", 36)
         end
 
-        def print_help
+        def exit_with_help
             puts ""
             warning "Usage:"
             puts "   Place the script in the directory with the " + XC_PROJECT_FILE + " file"
@@ -247,18 +262,14 @@ module CASConfig
         end
 
         def load_configuration()
-            if casId.empty?
-                error("[!] You must specify an CAS Id to complete the configuration.")
-                print_help()
-            end
-            if casId == "demo"
+            if casId.empty? || casId == "demo"
                 return "", ""
             end
             url = 'https://psvpromo.psvgamestudio.com/cas-settings.php?platform=1&apply=config&bundle=' + @casId
             data = load_with_cache(url) do |res|
                 if res.is_a?(Net::HTTPNoContent)
                     error("[!] CAS Id " + casId + " not registered.")
-                    print_help()
+                    exit_with_help()
                 end
                 if res.is_a?(Net::HTTPSuccess)
                     configName = sub_between(res['content-disposition'], 'filename="', '"')
@@ -290,7 +301,7 @@ module CASConfig
                     foundProjects = Dir.glob("*" + XC_PROJECT_FILE)
                     if foundProjects.empty?
                         CASConfig.error("[!] XCode project not found")
-                        CASConfig.print_help
+                        CASConfig.exit_with_help
                     end
                 end
                 if foundProjects.count == 1
@@ -492,7 +503,7 @@ module CASConfig
         end
 
         def check_cas_app_id(casId)
-            if casId == "demo"
+            if casId.empty? || casId == "demo"
                 return
             end
             currAppId = @plist[KEY_CAS_APP_ID]
@@ -503,6 +514,10 @@ module CASConfig
             else
                 puts "- " + KEY_CAS_APP_ID + " is up-to-date"
             end
+        end
+
+        def get_cas_app_id
+            return @plist[KEY_CAS_APP_ID].to_s
         end
 
         def check_google_app_id(casConfig)

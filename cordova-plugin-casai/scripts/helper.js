@@ -2,8 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const CAS_VERSION = '4.6.3';
 const CAS_ANDROID_FIX = '';
-const POD_PREFIX = "pod 'CleverAdsSolutions-SDK/";
-const CAS_CLASSPATH = "classpath 'com.cleveradssolutions:gradle-plugin:";
 
 module.exports = {
   CASConfig: class {
@@ -83,19 +81,25 @@ module.exports = {
     }
   },
 
-  buildPodLine: function (podName) {
-    var pod = podName.trim();
-    pod = pod.charAt(0).toUpperCase() + pod.slice(1);
-    return '\t' + POD_PREFIX + pod + "', '" + CAS_VERSION + "'";
-  },
-
-  updatePodfile: function (context, newPods) {
+  updatePodfile: function (context, config) {
     try {
+      const POD_PREFIX = "pod 'CleverAdsSolutions-SDK/";
       let podfilePath = path.join(context.opts.projectRoot, 'platforms', 'ios', 'Podfile');
 
-      if (newPods === undefined && this.isFileNotFound(podfilePath)) {
+      if (this.isFileNotFound(podfilePath)) {
         return;
       }
+      var newPods = undefined;
+      if (config) {
+        let solutions = config.getCASSolutions();
+        let adapters = config.getCASAdapters();
+        newPods = [...solutions, ...adapters].map((podName) => {
+          var pod = podName.trim();
+          pod = pod.charAt(0).toUpperCase() + pod.slice(1);
+          return '\t' + POD_PREFIX + pod + "', '" + CAS_VERSION + "'";
+        });
+      }
+
       var podfile = fs
         .readFileSync(podfilePath, 'utf-8')
         .split('\n')
@@ -114,7 +118,12 @@ module.exports = {
   },
 
   updateRootGradleFile: function (context) {
+    const CAS_CLASSPATH = "classpath 'com.cleveradssolutions:gradle-plugin:";
     let gradlePath = path.join(context.opts.projectRoot, 'platforms', 'android', 'build.gradle');
+
+    if (this.isFileNotFound(gradlePath)) {
+      return;
+    }
 
     let gradle = fs
       .readFileSync(gradlePath, 'utf-8')

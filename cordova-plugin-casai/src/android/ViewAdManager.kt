@@ -137,9 +137,10 @@ class ViewAdManager(
             }
 
             view.size = adSize
-            view.isAutoloadEnabled = autoload
             view.refreshInterval = refreshSeconds
-            if (!autoload) {
+            if (autoload) {
+                view.isAutoloadEnabled = true
+            } else {
                 view.load()
             }
         }

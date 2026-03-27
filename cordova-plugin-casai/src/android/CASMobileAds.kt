@@ -107,12 +107,12 @@ class CASMobileAds : CordovaPlugin() {
 
             "setLocationCollectionEnabled" -> {
                 CAS.targetingOptions.locationCollectionEnabled =
-                    data.optBoolean(0, false);
+                    data.optBoolean(0, false)
                 callbackContext.success()
             }
 
             "setTrialAdFreeInterval" -> {
-                CAS.settings.trialAdFreeInterval = data.optInt(0, 0);
+                CAS.settings.trialAdFreeInterval = data.optInt(0, 0)
                 callbackContext.success()
             }
 
@@ -231,7 +231,7 @@ class CASMobileAds : CordovaPlugin() {
         val ifRequired = args.optBoolean(0, false)
         val debugGeography = args.optString(1, null)
 
-        val flow = ConsentFlow(ifRequired)
+        val flow = ConsentFlow()
             .withUIContext(activity)
             .withDismissListener { status ->
                 callbackContext.success(consentStatusText(status))
