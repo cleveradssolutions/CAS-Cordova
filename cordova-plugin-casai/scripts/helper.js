@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const CAS_VERSION = '4.6.6';
+const CAS_VERSION = '4.7.0';
 const CAS_ANDROID_FIX = '';
 
 module.exports = {
