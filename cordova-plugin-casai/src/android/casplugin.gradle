@@ -77,6 +77,13 @@ repositories {
             includeGroup("sspnet.tech.madex.networks")
         }  
     }
+    maven {  
+        name = "DisplayIOAdsRepo"  
+        url = uri("https://maven.display.io/")  
+        content {  
+            includeGroup("com.brandio.ads")
+        }  
+    }
 }
 
 cdvPluginPostBuildExtras.add({
