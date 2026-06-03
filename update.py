@@ -2,8 +2,8 @@ import os
 import shutil
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.7.2"
-_CAS_VERSION = "4.7.1"
+_PLUGIN_VERSION = "4.7.3"
+_CAS_VERSION = "4.7.3"
 
 # Plugin publishing flow (from the project root):
 # $ python3 update.py
