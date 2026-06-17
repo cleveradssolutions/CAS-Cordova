@@ -2,8 +2,8 @@ import os
 import shutil
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.7.3"
-_CAS_VERSION = "4.7.3"
+_PLUGIN_VERSION = "4.7.4"
+_CAS_VERSION = "4.7.4"
 
 # Plugin publishing flow (from the project root):
 # $ python3 update.py
@@ -14,6 +14,7 @@ _CAS_VERSION = "4.7.3"
 # add to ~/.npmrc file access token: //registry.npmjs.org/:_authToken=
 # $ NOT logic, use token from npmrc: npm login
 # $ npm run release
+# https://github.com/cleveradssolutions/CAS-Cordova/releases
 
 
 def update_version_in_file(file_path, prefix, suffix):
