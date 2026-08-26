@@ -19,13 +19,10 @@
   "cordova": {
     "plugins": {
       "cordova-plugin-casai": {
-        "ANDROID_CAS_SOLUTIONS": "-",
-        "ANDROID_CAS_ADAPTERS": "-",
-        "ANDROID_USE_AD_ID": "true",
-        "IOS_CAS_ID": "demo",
-        "IOS_CAS_SOLUTIONS": "-",
         "IOS_CAS_ADAPTERS": "-",
-        "IOS_USER_TRACKING_USAGE": "Your data will remain confidential and will only be used to provide you a better and personalised ad experience"
+        "ANDROID_CAS_ADAPTERS": "-",
+        "ANDROID_CAS_SOLUTIONS": "-",
+        "ANDROID_USE_AD_ID": "true"
       }
     },
     "platforms": [
@@ -37,7 +34,7 @@
     "cordova": "^13.0.0",
     "cordova-android": "^15.0.0",
     "cordova-browser": "^7.0.0",
-    "cordova-ios": "^8.0.1",
+    "cordova-ios": "^8.1.0",
     "rimraf": "^6.1.0"
   },
   "dependencies": {

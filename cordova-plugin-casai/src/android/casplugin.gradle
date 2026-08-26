@@ -59,24 +59,6 @@ repositories {
         url = uri("https://aa-sdk.s3-eu-west-1.amazonaws.com/android_repo/")
         content { includeGroup("tv.superawesome.sdk.publisher") }
     }
-    maven {
-        name = "MadexAdsProxyRepo"
-        url = uri("https://repo.repsy.io/mvn/cleveradssolutions/proxy")
-        content {
-            includeGroup("sspnet.tech")
-            includeGroup("sspnet.tech.adapters")
-            includeGroup("sspnet.tech.madex.networks")
-        }
-    }
-    maven {  
-        name = "MadexAdsRepo"  
-        url = uri("https://sdkpkg.sspnet.tech")  
-        content {  
-            includeGroup("sspnet.tech")  
-            includeGroup("sspnet.tech.adapters")  
-            includeGroup("sspnet.tech.madex.networks")
-        }  
-    }
     maven {  
         name = "DisplayIOAdsRepo"  
         url = uri("https://maven.display.io/")  
