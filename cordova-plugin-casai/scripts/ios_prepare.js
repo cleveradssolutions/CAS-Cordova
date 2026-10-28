@@ -11,7 +11,8 @@ module.exports = function (context) {
 
   try {
     let config = new helper.CASConfig(context, 'ios');
-    helper.updatePodfile(context, config);
+    helper.removeLegacyPods(context);
+    helper.updateSwiftPackage(context, config);
   } catch (err) {
     console.error('❌ CAS iOS Prepare failed:', err.message || err);
   }

@@ -54,6 +54,13 @@ function updateXcodeProject(context, config) {
 
     if (result.stderr) {
       console.error(result.stderr);
+      if (result.stderr.includes('xcodeproj')) {
+        console.error(
+          '❌ CAS iOS: Ruby gem "xcodeproj" is required to configure the Xcode project (it was installed with CocoaPods before).\n' +
+            '   Install it with: gem install xcodeproj\n' +
+            '   Then reinstall the plugin: cordova plugin rm cordova-plugin-casai && cordova plugin add cordova-plugin-casai',
+        );
+      }
     }
     if (result.status != 0) {
       console.error('CAS Ruby script error status:', result.status);
@@ -63,10 +70,11 @@ function updateXcodeProject(context, config) {
 
 module.exports = function (context) {
   try {
-      let config = new helper.CASConfig(context, 'ios');
-      helper.updatePodfile(context, config);
-      updateXcodeProject(context, config);
-    } catch (err) {
-      console.error('❌ CAS iOS Prepare failed:', err.message || err);
-    }
+    let config = new helper.CASConfig(context, 'ios');
+    helper.removeLegacyPods(context);
+    helper.updateSwiftPackage(context, config);
+    updateXcodeProject(context, config);
+  } catch (err) {
+    console.error('❌ CAS iOS Install failed:', err.message || err);
+  }
 };

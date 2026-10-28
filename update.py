@@ -77,9 +77,9 @@ update_version_in_file(
     suffix=_CAS_VERSION + '" />'
 )
 update_version_in_file(
-    file_path=os.path.join(plugin_dir, "plugin.xml"),
-    prefix='                <pod name="CleverAdsSolutions-Base" spec="',
-    suffix=_CAS_VERSION + '" swift-version="5.0" />'
+    file_path=os.path.join(plugin_dir, "Package.swift"),
+    prefix='        .package(url: "https://github.com/cleveradssolutions/CAS-iOS.git", exact: "',
+    suffix=_CAS_VERSION + '"),'
 )
 update_version_in_file(
     file_path=os.path.join(plugin_dir, 'scripts', 'helper.js'),
@@ -99,6 +99,17 @@ update_source_files_from_platform(
         "CASMobileAds.kt",
         "ScreenAdManager.kt",
         "ViewAdManager.kt"
+    ]
+)
+# iOS sources are edited in Xcode inside the Swift Package copied by Cordova
+update_source_files_from_platform(
+    source=os.path.join("example", "platforms", "ios", "packages",
+                        "cordova-plugin-casai", "src", "ios"),
+    target=os.path.join(plugin_dir, "src", "ios"),
+    files=[
+        "CASMobileAds.swift",
+        "CASScreenAdManager.swift",
+        "CASViewAdManager.swift"
     ]
 )
 shutil.copy2(

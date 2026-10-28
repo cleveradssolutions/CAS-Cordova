@@ -29,6 +29,9 @@
     <keywords>ads,mediation,monetization,mobile,admob</keywords>
     <repo>https://github.com/cleveradssolutions/CAS-Cordova</repo>
     <issue>https://github.com/cleveradssolutions/CAS-Cordova/issues</issue>
+    <engines>
+        <engine name="cordova-ios" version=">=8.0.0" />
+    </engines>
     <js-module src="www/casai.js" name="CASMobileAds">
         <clobbers target="casai" />
     </js-module>
@@ -58,39 +61,26 @@
         <framework src="com.cleveradssolutions:cas-sdk:4.8.0" />
         <framework src="src/android/casplugin.gradle" custom="true" type="gradleReference" />
     </platform>
-    <platform name="ios">
+    <platform name="ios" package="swift">
         <!-- In most cases, a CAS ID is the same as your app store ID. 
             You can leave the "demo" value only for testing purposes. -->
         <preference name="IOS_CAS_ID" default="demo" />
-        <!-- Valid values "Optimal" and "Famileis" and "-" for none. -->
+        <!-- Valid values "Optimal", "Families", "Publishing", "VPNCompliant" and "-" for none. -->
         <preference name="IOS_CAS_SOLUTIONS" default="-" />
         <!-- Valid values from adapter names: https://docs.page/cleveradssolutions/docs/iOS/Mediated-Networks 
             For example: "GoogleAds,IronSource" -->
         <preference name="IOS_CAS_ADAPTERS" default="-" />
         <!-- Required to display the App Tracking Transparency authorization request for accessing the IDFA -->
         <preference name="IOS_USER_TRACKING_USAGE" default="Your data will remain confidential and will only be used to provide you a better and personalised ad experience" />
-        <framework src="AppTrackingTransparency.framework" weak="true" />
+        <!-- The plugin is a Swift Package (see Package.swift in the plugin root).
+            Native sources and dependencies (CAS SDK, adapters) are declared there, not with source-file/podspec. -->
         <hook type="after_plugin_install" src="scripts/ios_plugin_install.js" />
-        <hook type="before_plugin_uninstall" src="scripts/ios_plugin_uninstall.js" />
         <config-file target="config.xml" parent="/*">
             <feature name="CASMobileAds">
                 <param name="ios-package" value="CASMobileAds"/>
                 <param name="onload" value="true" />
             </feature>
-            <!-- <preference name="SwiftVersion" value="5.0" /> -->
         </config-file>
-        <source-file src="src/ios/CASMobileAds.swift" />
-        <source-file src="src/ios/CASScreenAdManager.swift" />
-        <source-file src="src/ios/CASViewAdManager.swift" />
-        <podspec>
-            <config>
-                <source url="https://github.com/CocoaPods/Specs.git"/>
-                <source url="https://github.com/cleveradssolutions/CAS-Specs.git"/>
-            </config>
-            <pods use-frameworks="true">
-                <pod name="CleverAdsSolutions-Base" spec="4.8.0" swift-version="5.0" />
-            </pods>
-        </podspec>
         <config-file target="*-Info.plist" parent="CASAIAppIdentifier">
             <string>$IOS_CAS_ID</string>
         </config-file>

@@ -5,7 +5,7 @@
   "description": "A sample CAS.AI Cordova application.",
   "main": "index.js",
   "scripts": {
-    "plugin": "cordova plugin rm cordova-plugin-casai --nosave && cordova plugin add ../cordova-plugin-casai --link --save",
+    "plugin": "cordova plugin rm cordova-plugin-casai --nosave && cordova plugin add ../cordova-plugin-casai --save",
     "android": "cordova platform rm android --nosave && cordova platform add android && cordova prepare android --verbose",
     "ios": "cordova platform rm ios --nosave && cordova platform add ios && cordova prepare ios --verbose",
     "test:android": "cordova prepare android --verbose && cordova build android",

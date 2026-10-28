@@ -1,4 +1,5 @@
 import CleverAdsSolutions
+import Cordova
 import Foundation
 
 class CASScreenAdManager: NSObject {

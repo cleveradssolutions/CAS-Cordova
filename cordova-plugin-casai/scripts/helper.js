@@ -3,6 +3,122 @@ const fs = require('fs');
 const CAS_VERSION = '4.8.0';
 const CAS_ANDROID_FIX = '';
 
+const PLUGIN_ID = 'cordova-plugin-casai';
+const SPM_BLOCK_BEGIN = '// CAS_PRODUCTS_BEGIN';
+const SPM_BLOCK_END = '// CAS_PRODUCTS_END';
+const LEGACY_POD_PREFIX = "pod 'CleverAdsSolutions-SDK/";
+
+// The values below must match the CAS-iOS version used in Package.swift of the plugin:
+// https://github.com/cleveradssolutions/CAS-iOS/blob/master/Package.swift
+// Minimum iOS version of the CAS-iOS package (platforms).
+const IOS_MIN_VERSION = '15.0';
+// Ads Solutions products: "Ads" + name + "Solutions".
+const IOS_SPM_SOLUTIONS = ['Optimal', 'Families', 'Publishing', 'VPNCompliant'];
+// Adapter products: "CASMediation" + name.
+const IOS_SPM_ADAPTERS = [
+  'AppLovin',
+  'AudienceNetwork',
+  'Bidease',
+  'BidMachine',
+  'Bigo',
+  'BlueSea',
+  'Chartboost',
+  'CrossPromo',
+  'DisplayIO',
+  'DTExchange',
+  'Exchange',
+  'GoogleAds',
+  'HyprMX',
+  'InMobi',
+  'IronSource',
+  'Kidoz',
+  'LiftoffMonetize',
+  'Maticoo',
+  'Mintegral',
+  'Moloco',
+  // 'Monetrix', disabled in CAS-iOS Package.swift: gitee repository requires authorization
+  'Ogury',
+  'Pangle',
+  'Prado',
+  'PubMatic',
+  'Smaato',
+  'StartIO',
+  'UnityAds',
+  'Verve',
+  'YangoAds',
+  'YsoNetwork',
+];
+
+// Alternative adapter names used in CocoaPods and documentation.
+const IOS_ADAPTER_ALIASES = {
+  casexchange: 'Exchange',
+  vungle: 'LiftoffMonetize',
+  facebook: 'AudienceNetwork',
+  meta: 'AudienceNetwork',
+  admob: 'GoogleAds',
+  yandex: 'YangoAds',
+};
+
+function compareVersions(a, b) {
+  let pa = String(a)
+    .split('.')
+    .map((v) => parseInt(v) || 0);
+  let pb = String(b)
+    .split('.')
+    .map((v) => parseInt(v) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    let diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff != 0) return diff;
+  }
+  return 0;
+}
+
+function findByName(list, name) {
+  let key = name.trim().toLowerCase();
+  return list.find((item) => item.toLowerCase() == key);
+}
+
+/**
+ * Returns CAS-iOS Swift Package product names from IOS_CAS_SOLUTIONS and IOS_CAS_ADAPTERS variables.
+ */
+function resolveIOSProducts(config) {
+  if (!config) return [];
+  let products = [];
+  let add = (product) => {
+    if (!products.includes(product)) products.push(product);
+  };
+
+  let solutions = config.findVariable('IOS_CAS_SOLUTIONS');
+  if (solutions && solutions != '-') {
+    solutions.split(/[ ,;]+/).forEach((name) => {
+      if (!name.trim()) return;
+      let solution = findByName(IOS_SPM_SOLUTIONS, name.toLowerCase() == 'vpn' ? 'VPNCompliant' : name);
+      if (solution) {
+        add('Ads' + solution + 'Solutions');
+      } else {
+        console.warn(
+          '⚠️ CAS iOS: Unknown solution "' + name + '" in IOS_CAS_SOLUTIONS will be skipped. Valid values: ' + IOS_SPM_SOLUTIONS.join(', '),
+        );
+      }
+    });
+  }
+
+  let unsupported = [];
+  config.getCASAdapters().forEach((name) => {
+    if (!name.trim()) return;
+    let adapter = IOS_ADAPTER_ALIASES[name.trim().toLowerCase()] || findByName(IOS_SPM_ADAPTERS, name);
+    if (adapter) {
+      add('CASMediation' + adapter);
+    } else {
+      unsupported.push(name.trim());
+    }
+  });
+  if (unsupported.length) {
+    console.warn('⚠️ CAS iOS: Adapters are not available with Swift Package Manager and will be skipped: ' + unsupported.join(', '));
+  }
+  return products;
+}
+
 module.exports = {
   CASConfig: class {
     platform = null;
@@ -28,7 +144,15 @@ module.exports = {
     findVariable(variableName) {
       const pattern = new RegExp(`<variable\\b[^>]*?\\bname=["']${variableName}["'][^>]*?\\bvalue=["']([^"']+)["'][^>]*?\\/?>`, 's');
       const match = this.appConfig.match(pattern);
-      return match ? match[1] : this.pluginConfig[variableName];
+      return match ? match[1] : this.pluginConfig?.[variableName];
+    }
+
+    /** The iOS deployment-target preference from config.xml (iOS platform section first). */
+    getIOSDeploymentTarget() {
+      const pattern = /<preference\b[^>]*?\bname=["']deployment-target["'][^>]*?\bvalue=["']([^"']+)["']/;
+      let iosSection = this.appConfig?.match(/<platform\b[^>]*?\bname=["']ios["'][^>]*>([\s\S]*?)<\/platform>/);
+      let match = (iosSection && iosSection[1].match(pattern)) || this.appConfig?.match(pattern);
+      return match ? match[1] : null;
     }
 
     getAppName() {
@@ -41,16 +165,12 @@ module.exports = {
       var result = [];
       if (solutions) {
         solutions = solutions.toLowerCase();
+        // Android only. iOS solutions are resolved to Swift Package products by resolveIOSProducts().
         if (this.platform == 'android') {
           if (solutions.indexOf('optimal') >= 0) result.push('OptimalAds');
           if (solutions.indexOf('families') >= 0) result.push('FamiliesAds');
           if (solutions.indexOf('vpn') >= 0) result.push('VPNCompliantAds');
           if (solutions.indexOf('tenjin') >= 0) result.push('TenjinSDK');
-        } else {
-          if (solutions.indexOf('optimal') >= 0) result.push('Optimal');
-          if (solutions.indexOf('families') >= 0) result.push('Families');
-          if (solutions.indexOf('vpn') >= 0) result.push('VPNCompliant');
-          if (solutions.indexOf('tenjin') >= 0) result.push('Tenjin');
         }
       }
       return result;
@@ -81,39 +201,108 @@ module.exports = {
     }
   },
 
-  updatePodfile: function (context, config) {
-    try {
-      const POD_PREFIX = "pod 'CleverAdsSolutions-SDK/";
-      let podfilePath = path.join(context.opts.projectRoot, 'platforms', 'ios', 'Podfile');
+  /**
+   * Regenerates the list of CAS products (solutions and adapters) in the plugin Package.swift copied by cordova-ios
+   * to platforms/ios/packages/cordova-plugin-casai/Package.swift.
+   */
+  updateSwiftPackage: function (context, config) {
+    let iosPlatformPath = path.join(context.opts.projectRoot, 'platforms', 'ios');
+    if (this.isDirectoryNotFound(iosPlatformPath)) {
+      return;
+    }
+    let packagePath = path.join(iosPlatformPath, 'packages', PLUGIN_ID, 'Package.swift');
+    if (this.isFileNotFound(packagePath)) {
+      console.warn(
+        '⚠️ CAS iOS: Package.swift of the plugin not found:\n   ' +
+          packagePath +
+          '\n   The plugin installed with --link option is not supported on iOS. Reinstall the plugin without --link.',
+      );
+      return;
+    }
 
+    let products = resolveIOSProducts(config);
+    let block = 'let casProducts: [String] = [' + products.map((name) => '"' + name + '"').join(', ') + ']';
+
+    let content = fs.readFileSync(packagePath, 'utf8');
+    let pattern = new RegExp('(' + SPM_BLOCK_BEGIN + '\\n)[\\s\\S]*?(\\n[ \\t]*' + SPM_BLOCK_END + ')');
+    if (!pattern.test(content)) {
+      console.error('❌ CAS iOS: Invalid Package.swift, products markers not found:\n   ' + packagePath);
+      return;
+    }
+    let newContent = content.replace(pattern, '$1' + block + '$2');
+    if (newContent != content) {
+      fs.writeFileSync(packagePath, newContent, 'utf8');
+    }
+    console.log('CAS iOS products: ' + (products.length ? products.join(', ') : 'none (test ads only)'));
+
+    this.syncDeploymentTarget(iosPlatformPath, config);
+  },
+
+  /**
+   * Keeps the CordovaPlugins package deployment target equal to the deployment-target preference.
+   * cordova-ios 8.0-8.1 updates it only once, so the value stays outdated after the preference changes.
+   */
+  syncDeploymentTarget: function (iosPlatformPath, config) {
+    let target = config?.getIOSDeploymentTarget();
+    if (!target || compareVersions(target, IOS_MIN_VERSION) < 0) {
+      console.error(
+        '❌ CAS iOS requires iOS ' +
+          IOS_MIN_VERSION +
+          ' or later, but the app deployment target is ' +
+          (target || 'not set') +
+          '.\n   Add to config.xml: <platform name="ios"><preference name="deployment-target" value="' +
+          IOS_MIN_VERSION +
+          '" /></platform>',
+      );
+      return;
+    }
+    let packagePath = path.join(iosPlatformPath, 'packages', 'cordova-ios-plugins', 'Package.swift');
+    if (this.isFileNotFound(packagePath)) {
+      return;
+    }
+    let content = fs.readFileSync(packagePath, 'utf8');
+    let newContent = content
+      .replace(/\.iOS\((?:\.v[0-9_]+|"[0-9.]+")\)/, '.iOS("' + target + '")')
+      .replace(/\.macCatalyst\((?:\.v[0-9_]+|"[0-9.]+")\)/, '.macCatalyst("' + target + '")');
+    if (newContent != content) {
+      fs.writeFileSync(packagePath, newContent, 'utf8');
+      console.log('CAS iOS: CordovaPlugins deployment target updated to ' + target);
+    }
+  },
+
+  /**
+   * Cleans the Podfile from CocoaPods leftovers:
+   * - CAS pods added to the Podfile by the previous plugin versions based on CocoaPods.
+   * - Podfile without any pods. cordova-ios 8.0-8.1 creates an empty Podfile on any plugin removal,
+   *   and then runs `pod install` on every prepare, which fails when CocoaPods is not installed.
+   */
+  removeLegacyPods: function (context) {
+    try {
+      let iosPlatformPath = path.join(context.opts.projectRoot, 'platforms', 'ios');
+      let podfilePath = path.join(iosPlatformPath, 'Podfile');
       if (this.isFileNotFound(podfilePath)) {
         return;
       }
-      var newPods = undefined;
-      if (config) {
-        let solutions = config.getCASSolutions();
-        let adapters = config.getCASAdapters();
-        newPods = [...solutions, ...adapters].map((podName) => {
-          var pod = podName.trim();
-          pod = pod.charAt(0).toUpperCase() + pod.slice(1);
-          return '\t' + POD_PREFIX + pod + "', '" + CAS_VERSION + "'";
-        });
+      let lines = fs.readFileSync(podfilePath, 'utf-8').split('\n');
+      let filtered = lines.filter((line) => !line.includes(LEGACY_POD_PREFIX));
+      if (filtered.length != lines.length) {
+        fs.writeFileSync(podfilePath, filtered.join('\n'), 'utf8');
+        console.log('CAS iOS: Removed legacy CocoaPods dependencies from Podfile.');
       }
 
-      var podfile = fs
-        .readFileSync(podfilePath, 'utf-8')
-        .split('\n')
-        .filter((line) => !line.includes(POD_PREFIX));
-
-      if (Array.isArray(newPods) && newPods.length > 0) {
-        const lastEndIndex = podfile.lastIndexOf('end');
-        if (lastEndIndex === -1) throw 'Not found end in Podfile!';
-        podfile.splice(lastEndIndex, 0, ...newPods);
+      let hasPods = filtered.some((line) => /^\s*pod\s+['"]/.test(line));
+      if (!hasPods) {
+        fs.unlinkSync(podfilePath);
+        console.log('CAS iOS: Removed empty Podfile to skip `pod install`.');
+        if (!this.isDirectoryNotFound(path.join(iosPlatformPath, 'Pods'))) {
+          console.warn(
+            '⚠️ CAS iOS: The Xcode project still contains an empty CocoaPods integration (Pods-App).\n' +
+              '   To get a clean project, recreate the platform: cordova platform rm ios && cordova platform add ios',
+          );
+        }
       }
-
-      fs.writeFileSync(podfilePath, podfile.join('\n'), 'utf8');
     } catch (err) {
-      console.error('❌ CAS iOS update Podfile failed:', err.message || err);
+      console.error('❌ CAS iOS: Clean Podfile failed:', err.message || err);
     }
   },
 

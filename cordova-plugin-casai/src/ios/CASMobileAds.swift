@@ -1,4 +1,5 @@
 import CleverAdsSolutions
+import Cordova
 import Foundation
 
 enum CASEvent: String {
@@ -77,7 +78,7 @@ class CASMobileAds: CDVPlugin {
 
         if !initResponse.isEmpty {
             let result = CDVPluginResult(
-                status: CDVCommandStatus_OK,
+                status: .ok,
                 messageAs: initResponse
             )
             commandDelegate?.send(result, callbackId: command.callbackId)
@@ -136,7 +137,7 @@ class CASMobileAds: CDVPlugin {
 
             if let id = callbackId {
                 let result = CDVPluginResult(
-                    status: CDVCommandStatus_OK,
+                    status: .ok,
                     messageAs: self.initResponse
                 )
                 self.commandDelegate?.send(result, callbackId: id)
@@ -459,13 +460,13 @@ class CASMobileAds: CDVPlugin {
 
 extension CASMobileAds {
     func sendOk(_ callbackId: String) {
-        let result = CDVPluginResult(status: CDVCommandStatus_OK)
+        let result = CDVPluginResult(status: .ok)
         commandDelegate?.send(result, callbackId: callbackId)
     }
 
     func sendOk(_ callbackId: String, messageAs: String) {
         let result = CDVPluginResult(
-            status: CDVCommandStatus_OK,
+            status: .ok,
             messageAs: messageAs
         )
         commandDelegate?.send(result, callbackId: callbackId)
@@ -473,7 +474,7 @@ extension CASMobileAds {
 
     func sendOk(_ callbackId: String, messageAs: Bool) {
         let result = CDVPluginResult(
-            status: CDVCommandStatus_OK,
+            status: .ok,
             messageAs: messageAs
         )
         commandDelegate?.send(result, callbackId: callbackId)
@@ -481,7 +482,7 @@ extension CASMobileAds {
 
     func sendOk(_ callbackId: String, messageAs: [String: Any]) {
         let result = CDVPluginResult(
-            status: CDVCommandStatus_OK,
+            status: .ok,
             messageAs: messageAs
         )
         commandDelegate?.send(result, callbackId: callbackId)
@@ -494,7 +495,7 @@ extension CASMobileAds {
             "message": "Load Promise interrupted by new load call",
         ]
         let result = CDVPluginResult(
-            status: CDVCommandStatus_ERROR,
+            status: .error,
             messageAs: body
         )
         commandDelegate?.send(result, callbackId: callbackId)
@@ -507,7 +508,7 @@ extension CASMobileAds {
             "message": error.description,
         ]
         let result = CDVPluginResult(
-            status: CDVCommandStatus_ERROR,
+            status: .error,
             messageAs: body
         )
         commandDelegate?.send(result, callbackId: callbackId)
