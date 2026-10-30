@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const CAS_VERSION = '4.8.0';
+const CAS_VERSION = '4.8.3';
 const CAS_ANDROID_FIX = '';
 
 const PLUGIN_ID = 'cordova-plugin-casai';
@@ -81,6 +81,8 @@ module.exports = {
 
     constructor(context, platform) {
       this.platform = platform;
+      // On plugin install Cordova has already merged --variable over config.xml into plugins/<platform>.json.
+      this.preferPluginConfig = context.hook == 'after_plugin_install';
       try {
         let appConfigPath = path.join(context.opts.projectRoot, 'config.xml');
         this.appConfig = fs.readFileSync(appConfigPath).toString();
@@ -98,6 +100,9 @@ module.exports = {
     }
 
     findVariable(variableName) {
+      if (this.preferPluginConfig && this.pluginConfig?.[variableName]) {
+        return this.pluginConfig[variableName];
+      }
       const pattern = new RegExp(`<variable\\b[^>]*?\\bname=["']${variableName}["'][^>]*?\\bvalue=["']([^"']+)["'][^>]*?\\/?>`, 's');
       const match = this.appConfig.match(pattern);
       return match ? match[1] : this.pluginConfig?.[variableName];

@@ -1,9 +1,10 @@
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
-_PLUGIN_VERSION = "4.8.0"
-_CAS_VERSION = "4.8.0"
+_PLUGIN_VERSION = "4.8.3"
+_CAS_VERSION = "4.8.3"
 
 # Plugin publishing flow (from the project root):
 # $ python3 update.py
@@ -112,8 +113,10 @@ update_source_files_from_platform(
         "CASViewAdManager.swift"
     ]
 )
-shutil.copy2(
-    src=os.path.join('..', 'CAS-Swift', 'PublicSamplesRepo',
-                     'Script XCodeConfig', 'casconfig.rb'),
-    dst=os.path.join(plugin_dir, "scripts", "ios_project_config.rb")
-)
+casconfig_dir = os.path.join("..", "CAS-iOS-Internal", "casconfig")
+subprocess.run(
+    ["tsc"] + [f for f in os.listdir(casconfig_dir) if f.endswith(".ts") and f != "cli.ts"] + [
+        "--outDir", os.path.abspath(os.path.join(plugin_dir, "scripts", "casconfig")),
+        "--module", "commonjs", "--target", "es2020",
+        "--esModuleInterop", "--skipLibCheck"],
+    cwd=casconfig_dir)

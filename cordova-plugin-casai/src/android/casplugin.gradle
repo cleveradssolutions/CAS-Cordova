@@ -66,6 +66,16 @@ repositories {
             includeGroup("com.brandio.ads")
         }  
     }
+    maven {
+        name = "BidMachineAdsRepo"
+        url = uri("https://artifactory.bidmachine.io/bidmachine")
+        content {
+            includeGroup("io.bidmachine")
+            includeGroup("io.bidmachine.libs")
+            includeGroup("io.bidmachine.media3")
+            includeGroup("com.explorestack")
+        }
+    }
 }
 
 cdvPluginPostBuildExtras.add({
