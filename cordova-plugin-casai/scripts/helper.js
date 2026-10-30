@@ -14,49 +14,11 @@ const LEGACY_POD_PREFIX = "pod 'CleverAdsSolutions-SDK/";
 const IOS_MIN_VERSION = '15.0';
 // Ads Solutions products: "Ads" + name + "Solutions".
 const IOS_SPM_SOLUTIONS = ['Optimal', 'Families', 'Publishing', 'VPNCompliant'];
-// Adapter products: "CASMediation" + name.
-const IOS_SPM_ADAPTERS = [
-  'AppLovin',
-  'AudienceNetwork',
-  'Bidease',
-  'BidMachine',
-  'Bigo',
-  'BlueSea',
-  'Chartboost',
-  'CrossPromo',
-  'DisplayIO',
-  'DTExchange',
-  'Exchange',
-  'GoogleAds',
-  'HyprMX',
-  'InMobi',
-  'IronSource',
-  'Kidoz',
-  'LiftoffMonetize',
-  'Maticoo',
-  'Mintegral',
-  'Moloco',
-  // 'Monetrix', disabled in CAS-iOS Package.swift: gitee repository requires authorization
-  'Ogury',
-  'Pangle',
-  'Prado',
-  'PubMatic',
-  'Smaato',
-  'StartIO',
-  'UnityAds',
-  'Verve',
-  'YangoAds',
-  'YsoNetwork',
-];
-
-// Alternative adapter names used in CocoaPods and documentation.
-const IOS_ADAPTER_ALIASES = {
-  casexchange: 'Exchange',
-  vungle: 'LiftoffMonetize',
-  facebook: 'AudienceNetwork',
-  meta: 'AudienceNetwork',
-  admob: 'GoogleAds',
-  yandex: 'YangoAds',
+// Adapter products: "CASMediation" + adapter name as entered by the publisher in IOS_CAS_ADAPTERS.
+// The names are not validated here: an unknown product fails in Xcode with its name in the error.
+// The CocoaPods name of the adapter that differs in Swift Package Manager.
+const IOS_ADAPTER_RENAMES = {
+  CASExchange: 'Exchange',
 };
 
 function compareVersions(a, b) {
@@ -103,19 +65,13 @@ function resolveIOSProducts(config) {
     });
   }
 
-  let unsupported = [];
   config.getCASAdapters().forEach((name) => {
-    if (!name.trim()) return;
-    let adapter = IOS_ADAPTER_ALIASES[name.trim().toLowerCase()] || findByName(IOS_SPM_ADAPTERS, name);
-    if (adapter) {
-      add('CASMediation' + adapter);
-    } else {
-      unsupported.push(name.trim());
-    }
+    let adapter = name.trim();
+    if (!adapter) return;
+    // Same as CocoaPods versions of the plugin: the first letter is capitalized.
+    adapter = adapter.charAt(0).toUpperCase() + adapter.slice(1);
+    add('CASMediation' + (IOS_ADAPTER_RENAMES[adapter] || adapter));
   });
-  if (unsupported.length) {
-    console.warn('⚠️ CAS iOS: Adapters are not available with Swift Package Manager and will be skipped: ' + unsupported.join(', '));
-  }
   return products;
 }
 

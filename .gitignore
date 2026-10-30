@@ -27,3 +27,15 @@ Thumbs.db
 .idea/
 .vscode/
 *.iml
+
+### Swift Package Manager / Xcode ###
+# SwiftPM checkouts and build products (created by `swift package` commands and Xcode)
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode build output, user state and test results
+build/
+DerivedData/
+xcuserdata/
+*.xcresult

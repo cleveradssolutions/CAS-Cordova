@@ -1,5 +1,8 @@
 import CleverAdsSolutions
+#if canImport(Cordova)
+// cordova-ios 8+ builds the plugin as a Swift Package, where Cordova is a separate module.
 import Cordova
+#endif
 import UIKit
 
 class CASViewAdManager: NSObject {
