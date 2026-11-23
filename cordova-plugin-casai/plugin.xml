@@ -21,7 +21,7 @@
     xmlns:rim="http://www.blackberry.com/ns/widgets"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="cordova-plugin-casai"
-    version="4.8.3">
+    version="4.8.4">
     <name>CAS Mobile Ads</name>
     <description>The CAS.AI Cordova plugin allows you to easily monetize your apps for iOS and Android using lot of Ads SDKs in mediation.</description>
     <license>Apache 2.0 License</license>
@@ -53,7 +53,7 @@
                 <param name="onload" value="true" />
             </feature>
             <preference name="GradlePluginKotlinEnabled" value="true" />
-            <preference name="GradlePluginKotlinVersion" value="2.1.21" />
+            <preference name="GradlePluginKotlinVersion" value="2.2.21" />
         </config-file>
         <source-file src="src/android/CASMobileAds.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
         <source-file src="src/android/ScreenAdManager.kt" target-dir="app/src/main/java/com/cleveradssolutions/plugin/cordova" />
