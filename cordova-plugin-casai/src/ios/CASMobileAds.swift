@@ -78,6 +78,7 @@ class CASMobileAds: CDVPlugin {
         let testDeviceIds = command.arguments[5] as? [String]
         let debugGeography = command.arguments[6] as? String
         let mediationExtras = command.arguments[7] as? [String: Any]
+        let consentSyncId = command.arguments[8] as? String
 
         if !initResponse.isEmpty {
             let result = CDVPluginResult(
@@ -114,6 +115,10 @@ class CASMobileAds: CDVPlugin {
         case "unregulated", "other":
             consentFlow.debugGeography = .other
         default: break
+        }
+
+        if let consentSyncId {
+            consentFlow.consentSyncId = consentSyncId
         }
 
         let builder = CAS.buildManager()
@@ -156,6 +161,7 @@ class CASMobileAds: CDVPlugin {
         // nativePromise('showConsentFlow', [ifRequired, debugGeography]);
         let ifRequired = command.arguments[0] as? Bool ?? false
         let debugGeography = command.arguments[1] as? String
+        let consentSyncId = command.arguments[2] as? String
 
         let consentFlow = CASConsentFlow()
             .withViewControllerToPresent(viewController)
@@ -174,6 +180,10 @@ class CASMobileAds: CDVPlugin {
         case "unregulated", "other":
             consentFlow.debugGeography = .other
         default: break
+        }
+
+        if let consentSyncId {
+            consentFlow.consentSyncId = consentSyncId
         }
 
         if ifRequired {

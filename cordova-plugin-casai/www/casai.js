@@ -148,6 +148,7 @@ var casai = {
     forceTestAds,
     testDeviceIds,
     debugGeography,
+    consentSyncId,
     mediationExtras,
     overrideFramework,
   }) {
@@ -160,11 +161,12 @@ var casai = {
       /* 5 */ testDeviceIds,
       /* 6 */ debugGeography ?? 'eea',
       /* 7 */ mediationExtras,
+      /* 8 */ consentSyncId,
     ]);
   },
 
-  showConsentFlow: function ({ ifRequired, debugGeography }) {
-    return nativePromise('showConsentFlow', [ifRequired, debugGeography]);
+  showConsentFlow: function ({ ifRequired, debugGeography, consentSyncId }) {
+    return nativePromise('showConsentFlow', [ifRequired, debugGeography, consentSyncId]);
   },
 
   getSDKVersion: function () {

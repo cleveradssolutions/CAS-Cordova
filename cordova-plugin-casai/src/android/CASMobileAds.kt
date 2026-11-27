@@ -181,6 +181,7 @@ class CASMobileAds : CordovaPlugin() {
         val testDeviceIds = args.optJSONArray(5)
         val debugGeography = args.optString(6)
         val mediationExtras = args.optJSONObject(7)
+        val consentSyncId = args.optString(8, null)
 
         when (targetAudience) {
             "children" -> CAS.settings.taggedAudience = Audience.CHILDREN
@@ -200,6 +201,9 @@ class CASMobileAds : CordovaPlugin() {
             .withForceTesting(forceTestAds)
         if (debugGeography.isNotEmpty()) {
             consentFlow.withDebugGeography(debugGeoFrom(debugGeography))
+        }
+        if (!consentSyncId.isNullOrEmpty()) {
+            consentFlow.withConsentSyncId(consentSyncId)
         }
 
         val managerBuilder = CAS.buildManager()
@@ -230,6 +234,7 @@ class CASMobileAds : CordovaPlugin() {
     private fun showConsentFlow(args: JSONArray, callbackContext: CallbackContext) {
         val ifRequired = args.optBoolean(0, false)
         val debugGeography = args.optString(1, null)
+        val consentSyncId = args.optString(2, null)
 
         val flow = ConsentFlow()
             .withUIContext(activity)
@@ -241,6 +246,9 @@ class CASMobileAds : CordovaPlugin() {
             if (type != ConsentFlow.DebugGeography.DISABLED) {
                 flow.withDebugGeography(type)
             }
+        }
+        if (!consentSyncId.isNullOrEmpty()) {
+            flow.withConsentSyncId(consentSyncId)
         }
 
         if (ifRequired) flow.showIfRequired() else flow.show()
